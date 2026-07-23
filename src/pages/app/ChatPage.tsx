@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Send, ArrowLeft, Phone, Video } from 'lucide-react'
 import { io, Socket } from 'socket.io-client'
 import { formatDistanceToNow, format, isToday } from 'date-fns'
-import { chatApi } from '../../api'
+import { chatApi, getMediaUrl } from '../../api'
 import { useAuthStore } from '../../stores/authStore'
 import Avatar from '../../components/shared/Avatar'
 import Spinner from '../../components/shared/Spinner'
@@ -167,7 +167,7 @@ export default function ChatPage() {
                 className={`chat-item ${activeConv?._id === conv._id ? 'active' : ''}`}
                 onClick={() => openConversation(conv)}
               >
-                <Avatar src={peer?.avatar} name={peer?.name ?? '?'} size="md" />
+                <Avatar src={getMediaUrl(peer?.avatar)} name={peer?.name ?? '?'} size="md" />
                 <div className="chat-item__info">
                   <div className="chat-item__name">{peer?.name}</div>
                   <div className="chat-item__preview">
@@ -226,7 +226,7 @@ export default function ChatPage() {
                 <div key={msg._id} style={{ display: 'flex', flexDirection: 'column', alignItems: isMine ? 'flex-end' : 'flex-start' }}>
                   {showAvatar && (
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-                      <Avatar src={msg.sender.avatar} name={msg.sender.name} size="sm" />
+                      <Avatar src={getMediaUrl(msg.sender.avatar)} name={msg.sender.name} size="sm" />
                       <span style={{ fontSize: '0.75rem', color: 'var(--text-light)' }}>{msg.sender.name}</span>
                     </div>
                   )}

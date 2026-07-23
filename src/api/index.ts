@@ -1,10 +1,23 @@
 import axios from 'axios'
 
+const API_BASE = (import.meta.env.VITE_API_BASE_URL as string) || ''
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL + '/api',
+  baseURL: API_BASE + '/api',
   withCredentials: true,
   headers: { 'Content-Type': 'application/json' },
 })
+
+/**
+ * Converts a server-relative upload path (e.g. "/uploads/abc.jpg")
+ * into a fully-qualified URL using the API base (e.g. "http://localhost:5000/uploads/abc.jpg").
+ * Returns undefined when the value is falsy so it is safe to pass directly to <img src>.
+ */
+export function getMediaUrl(path: string | undefined | null): string | undefined {
+  if (!path) return undefined
+  if (path.startsWith('http://') || path.startsWith('https://')) return path
+  return `${API_BASE}${path}`
+}
 
 // Attach token
 api.interceptors.request.use((config) => {

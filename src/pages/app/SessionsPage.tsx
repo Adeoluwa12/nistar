@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Calendar, Clock, Star, X } from 'lucide-react'
 import { format, isPast } from 'date-fns'
-import { sessionsApi } from '../../api'
+import { sessionsApi, getMediaUrl } from '../../api'
 import { useAuthStore } from '../../stores/authStore'
 import Avatar from '../../components/shared/Avatar'
 import Spinner from '../../components/shared/Spinner'
@@ -94,7 +94,7 @@ export default function SessionsPage() {
           return (
             <div key={session._id} className="card" style={{ padding: 20 }}>
               <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start', marginBottom: 14 }}>
-                <Avatar src={peer?.avatar} name={peer?.name ?? '?'} size="md" />
+                <Avatar src={getMediaUrl(peer?.avatar)} name={peer?.name ?? '?'} size="md" />
                 <div style={{ flex: 1 }}>
                   <div style={{ fontWeight: 600, fontSize: '0.9375rem', marginBottom: 2 }}>{peer?.name}</div>
                   <span style={{

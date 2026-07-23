@@ -2,7 +2,7 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { Home, Users, MessageCircle, User, Bell, PenSquare, LayoutDashboard } from 'lucide-react'
 import { useAuthStore } from '../../stores/authStore'
 import Avatar from '../shared/Avatar'
-import { userApi } from '../../api'
+import { userApi, getMediaUrl } from '../../api'
 import { useQuery } from '@tanstack/react-query'
 
 export default function AppLayout() {
@@ -39,7 +39,7 @@ export default function AppLayout() {
                 )}
               </NavLink>
               <NavLink to="/profile">
-                <Avatar src={user?.avatar} name={user?.name ?? 'U'} size="sm" />
+                <Avatar src={getMediaUrl(user?.avatar)} name={user?.name ?? 'U'} size="sm" />
               </NavLink>
             </>
           ) : (

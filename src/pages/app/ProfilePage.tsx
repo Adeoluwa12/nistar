@@ -2,7 +2,7 @@ import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Camera, LogOut, Settings, ChevronRight, BookOpen } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
-import { postsApi, userApi, authApi } from '../../api'
+import { postsApi, userApi, authApi, getMediaUrl } from '../../api'
 import { useAuthStore } from '../../stores/authStore'
 import Avatar from '../../components/shared/Avatar'
 import PostCard from '../../components/posts/PostCard'
@@ -66,7 +66,7 @@ export default function ProfilePage() {
       {/* Profile header */}
       <div className="profile-header">
         <div style={{ position: 'relative', display: 'inline-block' }}>
-          <Avatar src={user.avatar} name={user.name} size="xl" />
+          <Avatar src={getMediaUrl(user.avatar)} name={user.name} size="xl" />
           <button
             className="btn btn--icon"
             style={{
