@@ -5,7 +5,8 @@ import type { Post } from '../../types'
 import Avatar from '../shared/Avatar'
 import { useAuthStore } from '../../stores/authStore'
 import { postsApi, getMediaUrl } from '../../api'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 
 interface Props {
@@ -15,9 +16,15 @@ interface Props {
 
 export default function PostCard({ post, onLikeToggle }: Props) {
   const { user, isAuthenticated } = useAuthStore()
+  const qc = useQueryClient()
   const [likeCount, setLikeCount] = useState(post.likeCount)
   const [liked, setLiked] = useState(post.likes?.includes(user?._id ?? '') ?? false)
   const [liking, setLiking] = useState(false)
+
+  useEffect(() => {
+    setLikeCount(post.likeCount)
+    setLiked(post.likes?.includes(user?._id ?? '') ?? false)
+  }, [post.likeCount, post.likes, user?._id])
 
   const authorName = post.isAnonymous ? 'Anonymous' : post.author.name
   const authorAvatar = post.isAnonymous ? undefined : getMediaUrl(post.author.avatar)
@@ -34,6 +41,9 @@ export default function PostCard({ post, onLikeToggle }: Props) {
       setLiked(newLiked)
       setLikeCount(newCount)
       onLikeToggle?.(post._id, newLiked, newCount)
+      qc.invalidateQueries({ queryKey: ['posts'] })
+      qc.invalidateQueries({ queryKey: ['my-posts'] })
+      if (post.slug) qc.invalidateQueries({ queryKey: ['post', post.slug] })
     } catch {
       toast.error('Could not process like')
     } finally {

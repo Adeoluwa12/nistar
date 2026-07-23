@@ -24,6 +24,7 @@ import ChatPage from './pages/app/ChatPage'
 import ProfilePage from './pages/app/ProfilePage'
 import NotificationsPage from './pages/app/NotificationsPage'
 import SessionsPage from './pages/app/SessionsPage'
+import ChangePasswordPage from './pages/app/ChangePasswordPage'
 
 // Admin
 import AdminPage from './pages/admin/AdminPage'
@@ -72,6 +73,9 @@ export default function App() {
             } />
             <Route path="/sessions" element={
               <ProtectedRoute><SessionsPage /></ProtectedRoute>
+            } />
+            <Route path="/change-password" element={
+              <ProtectedRoute><ChangePasswordPage /></ProtectedRoute>
             } />
 
             {/* Admin */}

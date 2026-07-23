@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Heart, MessageCircle, Share2, ArrowLeft, Send, Trash2 } from 'lucide-react'
@@ -23,25 +23,27 @@ export default function PostPage() {
 
   const { data, isLoading } = useQuery({
     queryKey: ['post', slug],
-    queryFn: async () => {
-      const res = await postsApi.getOne(slug!)
-      const p = res.data?.data?.post
-      if (p) {
-        setLikeCount(p.likeCount)
-        setLiked(p.likes?.includes(user?._id ?? '') ?? false)
-      }
-      return res
-    },
+    queryFn: () => postsApi.getOne(slug!),
   })
 
   const post = data?.data?.data?.post
   const comments: Comment[] = data?.data?.data?.comments ?? []
+
+  useEffect(() => {
+    if (post) {
+      setLikeCount(post.likeCount)
+      setLiked(post.likes?.includes(user?._id ?? '') ?? false)
+    }
+  }, [post, user?._id])
 
   const likeMut = useMutation({
     mutationFn: () => postsApi.like(post!._id),
     onSuccess: (res) => {
       setLiked(res.data.data.liked)
       setLikeCount(res.data.data.likeCount)
+      qc.invalidateQueries({ queryKey: ['post', slug] })
+      qc.invalidateQueries({ queryKey: ['posts'] })
+      qc.invalidateQueries({ queryKey: ['my-posts'] })
     },
   })
 
@@ -50,6 +52,8 @@ export default function PostPage() {
     onSuccess: () => {
       setComment('')
       qc.invalidateQueries({ queryKey: ['post', slug] })
+      qc.invalidateQueries({ queryKey: ['posts'] })
+      qc.invalidateQueries({ queryKey: ['my-posts'] })
       toast.success('Comment added')
     },
     onError: () => toast.error('Failed to add comment'),
@@ -57,7 +61,12 @@ export default function PostPage() {
 
   const deleteCommentMut = useMutation({
     mutationFn: (id: string) => commentsApi.delete(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['post', slug] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['post', slug] })
+      qc.invalidateQueries({ queryKey: ['posts'] })
+      qc.invalidateQueries({ queryKey: ['my-posts'] })
+      toast.success('Comment deleted')
+    },
   })
 
   const handleShare = async () => {
