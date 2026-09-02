@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, Lock, Eye, EyeOff, ShieldCheck } from 'lucide-react'
 import { authApi } from '../../api'
+import { getErrorMessage } from '../../lib/errors'
 import toast from 'react-hot-toast'
 
 function PasswordField({
@@ -72,9 +73,7 @@ export default function ChangePasswordPage() {
       setDone(true)
       toast.success('Password changed successfully!')
     } catch (err: unknown) {
-      const msg =
-        (err as { response?: { data?: { message?: string } } }).response?.data?.message ||
-        'Failed to change password'
+      const msg = getErrorMessage(err, 'Failed to change password')
       toast.error(msg)
       if (msg.toLowerCase().includes('incorrect') || msg.toLowerCase().includes('current')) {
         setErrors({ current: 'Current password is incorrect' })

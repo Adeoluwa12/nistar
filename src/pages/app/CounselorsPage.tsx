@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { Users, CheckCircle, MessageCircle } from 'lucide-react'
 import { counselorsApi, getMediaUrl } from '../../api'
+import { getErrorMessage } from '../../lib/errors'
 import { useAuthStore } from '../../stores/authStore'
 import Avatar from '../../components/shared/Avatar'
 import Spinner from '../../components/shared/Spinner'
@@ -12,14 +13,13 @@ import { useNavigate } from 'react-router-dom'
 export default function CounselorsPage() {
   const { user, isAuthenticated, setUser } = useAuthStore()
   const navigate = useNavigate()
-  const [selectedDept] = useState('')
   const [selectedCounselor, setSelectedCounselor] = useState<Counselor | null>(null)
 
   const hasAssigned = !!user?.assignedCounselor
 
   const { data, isLoading } = useQuery({
-    queryKey: ['counselors', selectedDept],
-    queryFn: () => counselorsApi.getAll(selectedDept ? { department: selectedDept } : {}),
+    queryKey: ['counselors'],
+    queryFn: () => counselorsApi.getAll(),
   })
 
   const counselors: Counselor[] = data?.data?.data ?? []
@@ -32,8 +32,7 @@ export default function CounselorsPage() {
       setSelectedCounselor(null)
     },
     onError: (err: unknown) => {
-      const msg = (err as { response?: { data?: { message?: string } } }).response?.data?.message || 'Request failed'
-      toast.error(msg)
+      toast.error(getErrorMessage(err, 'Request failed'))
     },
   })
 

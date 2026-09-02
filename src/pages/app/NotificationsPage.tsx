@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Bell, Check, Heart, MessageCircle, UserCheck, Calendar, AlertCircle } from 'lucide-react'
+import { Bell, Star, Check, Heart, MessageCircle, UserCheck, Calendar, AlertCircle } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { userApi } from '../../api'
 import Spinner from '../../components/shared/Spinner'
@@ -14,6 +14,12 @@ const ICON_MAP: Record<string, React.ReactNode> = {
   session_cancelled: <AlertCircle size={16} style={{ color: 'var(--warning)' }} />,
   new_message: <MessageCircle size={16} style={{ color: 'var(--sage)' }} />,
   account_suspended: <AlertCircle size={16} style={{ color: 'var(--error)' }} />,
+  author_promotion: <Star size={16} style={{ color: '#F59E0B' }} />,
+  session_approved: <Calendar size={16} style={{ color: 'var(--sage)' }} />,
+  session_assigned: <Calendar size={16} style={{ color: 'var(--sage-dark)' }} />,
+  role_changed: <Star size={16} style={{ color: '#F59E0B' }} />,
+  application_approved: <Check size={16} style={{ color: 'var(--success)' }} />,
+  application_rejected: <AlertCircle size={16} style={{ color: 'var(--error)' }} />,
 }
 
 export default function NotificationsPage() {

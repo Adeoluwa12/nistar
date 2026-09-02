@@ -5,7 +5,7 @@ import type { Post } from '../../types'
 import Avatar from '../shared/Avatar'
 import { useAuthStore } from '../../stores/authStore'
 import { postsApi, getMediaUrl } from '../../api'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 
@@ -20,11 +20,16 @@ export default function PostCard({ post, onLikeToggle }: Props) {
   const [likeCount, setLikeCount] = useState(post.likeCount)
   const [liked, setLiked] = useState(post.likes?.includes(user?._id ?? '') ?? false)
   const [liking, setLiking] = useState(false)
+  const syncKeyRef = useRef(`${post._id}:${post.likeCount}:${user?._id ?? ''}`)
 
   useEffect(() => {
-    setLikeCount(post.likeCount)
-    setLiked(post.likes?.includes(user?._id ?? '') ?? false)
-  }, [post.likeCount, post.likes, user?._id])
+    const next = `${post._id}:${post.likeCount}:${user?._id ?? ''}`
+    if (next !== syncKeyRef.current) {
+      syncKeyRef.current = next
+      setLikeCount(post.likeCount)
+      setLiked(post.likes?.includes(user?._id ?? '') ?? false)
+    }
+  }, [post._id, post.likeCount, post.likes, user?._id])
 
   const authorName = post.isAnonymous ? 'Anonymous' : post.author.name
   const authorAvatar = post.isAnonymous ? undefined : getMediaUrl(post.author.avatar)
@@ -90,7 +95,12 @@ export default function PostCard({ post, onLikeToggle }: Props) {
             <div className="post-card__author">
               <Avatar src={authorAvatar} name={authorName} size="sm" />
               <div>
-                <div className="post-card__author-name">{authorName}</div>
+                <div className="post-card__author-name">
+                  {authorName}
+                  {post.author.isAuthor && !post.isAnonymous && (
+                    <span className="author-badge">Author</span>
+                  )}
+                </div>
                 <div className="post-card__date">
                   {formatDistanceToNow(new Date(post.createdAt), { addSuffix: true })}
                 </div>

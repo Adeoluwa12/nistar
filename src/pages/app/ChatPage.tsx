@@ -1,26 +1,14 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Send, ArrowLeft, Phone, Video } from 'lucide-react'
-import { io, Socket } from 'socket.io-client'
 import { formatDistanceToNow, format, isToday } from 'date-fns'
 import { chatApi, getMediaUrl } from '../../api'
+import { getSocket, disconnectSocket } from '../../lib/socket'
 import { useAuthStore } from '../../stores/authStore'
 import Avatar from '../../components/shared/Avatar'
 import Spinner from '../../components/shared/Spinner'
 import toast from 'react-hot-toast'
 import type { Conversation, Message } from '../../types'
-
-let socket: Socket | null = null
-
-const getSocket = (token: string) => {
-  if (!socket) {
-    socket = io(import.meta.env.VITE_SOCKET_URL, {
-      auth: { token },
-      transports: ['websocket', 'polling'],
-    })
-  }
-  return socket
-}
 
 export default function ChatPage() {
   const { user, token } = useAuthStore()
@@ -31,9 +19,18 @@ export default function ChatPage() {
   const [typing, setTyping] = useState(false)
   const [peerTyping, setPeerTyping] = useState(false)
   const [sending, setSending] = useState(false)
+  const [isMobile, setIsMobile] = useState(() => window.matchMedia('(max-width: 767px)').matches)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const typingTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [showList, setShowList] = useState(true)
+
+  // Track viewport size reactively instead of reading window.innerWidth in render.
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 767px)')
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches)
+    mq.addEventListener('change', handler)
+    return () => mq.removeEventListener('change', handler)
+  }, [])
 
   const { data: convData, isLoading } = useQuery({
     queryKey: ['conversations'],
@@ -75,6 +72,9 @@ export default function ChatPage() {
       s.off('message:new')
       s.off('typing:start')
       s.off('typing:stop')
+      // Tear down the connection so a stale, previously-authenticated socket
+      // is never reused after logout or a token change.
+      disconnectSocket()
     }
   }, [token, user?._id, qc])
 
@@ -130,8 +130,10 @@ export default function ChatPage() {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage() }
   }
 
-  const getPeer = (conv: Conversation) =>
-    user?.role === 'user' ? conv.counselor : conv.user
+  const getPeer = (conv: Conversation) => {
+    if (user?.role === 'user') return conv.counselor
+    return conv.user
+  }
 
   const formatMsgTime = (date: string) => {
     const d = new Date(date)
@@ -192,12 +194,12 @@ export default function ChatPage() {
 
       {/* Chat window */}
       {activeConv && (
-        <div className="chat-window" style={{ display: showList && window.innerWidth < 768 ? 'none' : 'flex' }}>
+        <div className="chat-window" style={{ display: showList && isMobile ? 'none' : 'flex' }}>
           <div className="chat-window__header">
             <button className="chat-window__back btn btn--ghost btn--icon" onClick={() => setShowList(true)}>
               <ArrowLeft size={20} />
             </button>
-            <Avatar src={getPeer(activeConv)?.avatar} name={getPeer(activeConv)?.name ?? '?'} size="md" />
+            <Avatar src={getMediaUrl(getPeer(activeConv)?.avatar)} name={getPeer(activeConv)?.name ?? '?'} size="md" />
             <div style={{ flex: 1 }}>
               <div style={{ fontWeight: 600, fontSize: '0.9375rem' }}>{getPeer(activeConv)?.name}</div>
               <div style={{ fontSize: '0.75rem', color: 'var(--sage-dark)' }}>

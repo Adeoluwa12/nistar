@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Heart, MessageCircle, Share2, ArrowLeft, Send, Trash2 } from 'lucide-react'
@@ -20,6 +20,7 @@ export default function PostPage() {
   const [isAnon, setIsAnon] = useState(false)
   const [liked, setLiked] = useState(false)
   const [likeCount, setLikeCount] = useState(0)
+  const [syncKey, setSyncKey] = useState<string | null>(null)
 
   const { data, isLoading } = useQuery({
     queryKey: ['post', slug],
@@ -29,12 +30,15 @@ export default function PostPage() {
   const post = data?.data?.data?.post
   const comments: Comment[] = data?.data?.data?.comments ?? []
 
-  useEffect(() => {
-    if (post) {
-      setLikeCount(post.likeCount)
-      setLiked(post.likes?.includes(user?._id ?? '') ?? false)
-    }
-  }, [post, user?._id])
+  // Sync local like state to the loaded post during render (not in an effect)
+  // so there are no cascading renders. Re-syncs whenever the post/like data
+  // or current user changes.
+  const nextSyncKey = post ? `${post._id}:${post.likeCount}:${user?._id ?? ''}` : null
+  if (post && nextSyncKey !== syncKey) {
+    setSyncKey(nextSyncKey)
+    setLikeCount(post.likeCount)
+    setLiked(post.likes?.includes(user?._id ?? '') ?? false)
+  }
 
   const likeMut = useMutation({
     mutationFn: () => postsApi.like(post!._id),
@@ -125,8 +129,9 @@ export default function PostPage() {
           </div>
         )}
 
-        <div style={{ fontSize: '1.0625rem', lineHeight: 1.8 }}
-          dangerouslySetInnerHTML={{ __html: post.content.replace(/\n/g, '<br/>') }} />
+        <div style={{ fontSize: '1.0625rem', lineHeight: 1.8, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+          {post.content}
+        </div>
 
         <div style={{ display: 'flex', gap: 16, marginTop: 32, paddingTop: 24, borderTop: '1px solid var(--border-light)' }}>
           <button

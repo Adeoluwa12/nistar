@@ -2,10 +2,12 @@ import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Camera, LogOut, Settings, ChevronRight, BookOpen,
-  User, Mail, Shield, Lock, Star, CheckCircle,
+  User, Mail, Shield, Lock, Star, CheckCircle, FileText,
 } from 'lucide-react'
-import { useQuery } from '@tanstack/react-query'
-import { postsApi, userApi, authApi, getMediaUrl } from '../../api'
+import { useQuery, useMutation } from '@tanstack/react-query'
+import { postsApi, userApi, authApi, counselorsApi, getMediaUrl } from '../../api'
+import { disconnectSocket } from '../../lib/socket'
+import { getErrorMessage } from '../../lib/errors'
 import { useAuthStore } from '../../stores/authStore'
 import Avatar from '../../components/shared/Avatar'
 import PostCard from '../../components/posts/PostCard'
@@ -21,6 +23,9 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
+  const docRef = useRef<HTMLInputElement>(null)
+  const [applyStatement, setApplyStatement] = useState('')
+  const [applyDocs, setApplyDocs] = useState<File[]>([])
 
   const { data: postsData, isLoading: postsLoading } = useQuery({
     queryKey: ['my-posts'],
@@ -52,10 +57,7 @@ export default function ProfilePage() {
       setUser(data.data)
       toast.success('Profile photo updated!')
     } catch (err: unknown) {
-      const msg =
-        (err as { response?: { data?: { message?: string } } }).response?.data?.message ||
-        'Failed to update photo — please try again'
-      toast.error(msg)
+      toast.error(getErrorMessage(err, 'Failed to update photo — please try again'))
     } finally {
       setUploading(false)
       // reset input so same file can be re-selected
@@ -84,14 +86,33 @@ export default function ProfilePage() {
     try {
       await authApi.logout()
     } catch { /* silent */ }
+    disconnectSocket()
     clearAuth()
     navigate('/login')
     toast.success('Signed out')
   }
 
+  const applyMut = useMutation({
+    mutationFn: () => {
+      const fd = new FormData()
+      fd.append('statement', applyStatement)
+      applyDocs.forEach(d => fd.append('documents', d))
+      return counselorsApi.apply(fd)
+    },
+    onSuccess: () => {
+      toast.success('Application submitted!')
+      setApplyStatement('')
+      setApplyDocs([])
+    },
+    onError: (err: unknown) => {
+      toast.error(getErrorMessage(err, 'Failed to submit application'))
+    },
+  })
+
   const roleLabel = user?.role === 'super_admin' ? '⭐ Super Admin'
     : user?.role === 'department_admin' ? '🛡 Department Admin'
     : user?.role === 'counselor' ? '💚 Counselor'
+    : user?.isAuthor ? '✍️ Nistar Author'
     : '🌱 Community Member'
 
   if (!user) return null
@@ -201,7 +222,7 @@ export default function ProfilePage() {
 
       {/* Settings tab */}
       {tab === 'settings' && (
-        <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div key={user?._id ?? 'anon'} style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 16 }}>
 
           {/* Account info card */}
           <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
@@ -369,6 +390,54 @@ export default function ProfilePage() {
               ))}
             </div>
           </div>
+
+          {/* Counselor application */}
+          {user.role === 'user' && (
+            <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+              <div className="settings-section-header">
+                <FileText size={15} />
+                <span>Become a Counselor</span>
+              </div>
+              <div style={{ padding: '0 20px 20px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <div className="form-group">
+                  <label className="form-label">Statement <span style={{ color: 'var(--text-light)' }}>(optional)</span></label>
+                  <textarea
+                    className="form-input"
+                    rows={3}
+                    value={applyStatement}
+                    onChange={e => setApplyStatement(e.target.value)}
+                    placeholder="Why do you want to be a counselor?"
+                    maxLength={5000}
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Supporting documents <span style={{ color: 'var(--text-light)' }}>(PDF, optional, up to 5)</span></label>
+                  <input
+                    ref={docRef}
+                    type="file"
+                    accept=".pdf,application/pdf"
+                    multiple
+                    style={{ display: 'none' }}
+                    onChange={e => setApplyDocs(Array.from(e.target.files || []))}
+                  />
+                  <button
+                    className="btn btn--secondary btn--sm"
+                    onClick={() => docRef.current?.click()}
+                  >
+                    {applyDocs.length > 0 ? `${applyDocs.length} file(s) selected` : 'Choose PDFs'}
+                  </button>
+                </div>
+                <button
+                  className="btn btn--primary"
+                  onClick={() => applyMut.mutate()}
+                  disabled={applyMut.isPending}
+                  style={{ alignSelf: 'flex-start' }}
+                >
+                  {applyMut.isPending ? 'Submitting…' : 'Apply'}
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Sign out */}
           <button

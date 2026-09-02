@@ -10,6 +10,8 @@ import toast from 'react-hot-toast'
 import type { Session } from '../../types'
 
 const STATUS_COLORS: Record<string, string> = {
+  pending: '#E67E22',
+  approved: '#3498DB',
   scheduled: 'var(--sage)',
   active: '#27AE60',
   completed: 'var(--text-light)',
@@ -52,6 +54,34 @@ export default function SessionsPage() {
     onError: () => toast.error('Failed to submit rating'),
   })
 
+  const [showRequest, setShowRequest] = useState(false)
+  const [requestedDate, setRequestedDate] = useState('')
+  const [requestDesc, setRequestDesc] = useState('')
+  const [emotionalState, setEmotionalState] = useState('')
+  const [preferredSupport, setPreferredSupport] = useState<'call' | 'chat' | 'follow-up' | ''>('')
+  const [availabilityText, setAvailabilityText] = useState('')
+
+  const requestMut = useMutation({
+    mutationFn: () => sessionsApi.requestAppointment({
+      requestedDate: new Date(requestedDate).toISOString(),
+      description: requestDesc,
+      emotionalState,
+      preferredSupportType: preferredSupport || undefined,
+      availability: availabilityText,
+    }),
+    onSuccess: () => {
+      toast.success('Appointment request sent')
+      qc.invalidateQueries({ queryKey: ['sessions'] })
+      setShowRequest(false)
+      setRequestedDate('')
+      setRequestDesc('')
+      setEmotionalState('')
+      setPreferredSupport('')
+      setAvailabilityText('')
+    },
+    onError: () => toast.error('Failed to request appointment'),
+  })
+
   const isUser = user?.role === 'user'
 
   return (
@@ -63,9 +93,86 @@ export default function SessionsPage() {
         </p>
       </div>
 
+      {/* Request + Filter */}
+      <div style={{ padding: '0 16px 12px' }}>
+        {isUser && (
+          <button
+            className="btn btn--primary btn--sm"
+            onClick={() => setShowRequest(s => !s)}
+            style={{ marginBottom: 12, width: '100%' }}
+          >
+            {showRequest ? 'Close' : 'Request appointment'}
+          </button>
+        )}
+
+        {showRequest && (
+          <div className="card" style={{ padding: 16, marginBottom: 12 }}>
+            <div className="form-group" style={{ marginBottom: 12 }}>
+              <label className="form-label">Preferred date & time</label>
+              <input
+                type="datetime-local"
+                className="form-input"
+                value={requestedDate}
+                onChange={e => setRequestedDate(e.target.value)}
+              />
+            </div>
+            <div className="form-group" style={{ marginBottom: 12 }}>
+              <label className="form-label">What would you like support with? <span style={{ color: 'var(--text-light)' }}>(optional)</span></label>
+              <textarea
+                className="form-input"
+                rows={3}
+                value={requestDesc}
+                onChange={e => setRequestDesc(e.target.value)}
+                placeholder="Briefly describe your situation…"
+              />
+            </div>
+            <div className="form-group" style={{ marginBottom: 12 }}>
+              <label className="form-label">How are you feeling right now? <span style={{ color: 'var(--text-light)' }}>(optional, private)</span></label>
+              <textarea
+                className="form-input"
+                rows={3}
+                value={emotionalState}
+                onChange={e => setEmotionalState(e.target.value)}
+                placeholder="Shared privately with your assigned counselor…"
+              />
+            </div>
+            <div className="form-group" style={{ marginBottom: 12 }}>
+              <label className="form-label">Preferred support type <span style={{ color: 'var(--text-light)' }}>(optional)</span></label>
+              <select
+                className="form-input"
+                value={preferredSupport}
+                onChange={e => setPreferredSupport(e.target.value as 'call' | 'chat' | 'follow-up' | '')}
+              >
+                <option value="">No preference</option>
+                <option value="call">Call</option>
+                <option value="chat">Chat</option>
+                <option value="follow-up">Follow-up later</option>
+              </select>
+            </div>
+            <div className="form-group" style={{ marginBottom: 12 }}>
+              <label className="form-label">Availability <span style={{ color: 'var(--text-light)' }}>(optional)</span></label>
+              <input
+                type="text"
+                className="form-input"
+                value={availabilityText}
+                onChange={e => setAvailabilityText(e.target.value)}
+                placeholder="e.g. Weekday evenings"
+              />
+            </div>
+            <button
+              className="btn btn--primary btn--sm"
+              onClick={() => requestMut.mutate()}
+              disabled={!requestedDate || requestMut.isPending}
+            >
+              {requestMut.isPending ? 'Submitting…' : 'Submit request'}
+            </button>
+          </div>
+        )}
+      </div>
+
       {/* Filter */}
       <div className="feed-filters">
-        {['all', 'scheduled', 'completed', 'cancelled'].map(f => (
+        {['all', 'pending', 'approved', 'scheduled', 'completed', 'cancelled'].map(f => (
           <button key={f} className={`filter-chip ${filter === f ? 'active' : ''}`} onClick={() => setFilter(f)}>
             {f.charAt(0).toUpperCase() + f.slice(1)}
           </button>
@@ -86,9 +193,12 @@ export default function SessionsPage() {
         )}
 
         {sessions.map(session => {
-          const peer = isUser ? session.counselor : session.user
-          const past = isPast(new Date(session.scheduledAt))
-          const canCancel = session.status === 'scheduled' && !past
+          const peer = isUser
+            ? (session.counselor ?? { name: 'Pending assignment', avatar: undefined })
+            : session.user
+          const date = session.scheduledAt || session.requestedDate
+          const past = isPast(new Date(date))
+          const canCancel = ['pending', 'approved', 'scheduled', 'active'].includes(session.status) && !past
           const canRate = isUser && session.status === 'completed' && !session.rating
 
           return (
@@ -110,13 +220,25 @@ export default function SessionsPage() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: 14 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <Calendar size={14} style={{ flexShrink: 0, color: 'var(--sage)' }} />
-                  {format(new Date(session.scheduledAt), 'EEEE, MMMM d, yyyy')}
+                  {format(new Date(date), 'EEEE, MMMM d, yyyy')}
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <Clock size={14} style={{ flexShrink: 0, color: 'var(--sage)' }} />
-                  {format(new Date(session.scheduledAt), 'h:mm a')} · {session.duration ?? 60} minutes
+                  {format(new Date(date), 'h:mm a')} · {session.duration ?? 60} minutes
                 </div>
               </div>
+
+              {session.description && (
+                <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', background: 'var(--beige)', padding: '10px 14px', borderRadius: 'var(--radius)', marginBottom: 14, lineHeight: 1.6 }}>
+                  {session.description}
+                </div>
+              )}
+
+              {session.emotionalState && (
+                <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', background: 'var(--lavender)', padding: '10px 14px', borderRadius: 'var(--radius)', marginBottom: 14, lineHeight: 1.6 }}>
+                  <strong style={{ color: 'var(--text-primary)' }}>How they feel:</strong> {session.emotionalState}
+                </div>
+              )}
 
               {session.notes && (
                 <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', background: 'var(--beige)', padding: '10px 14px', borderRadius: 'var(--radius)', marginBottom: 14, lineHeight: 1.6 }}>
@@ -171,7 +293,7 @@ export default function SessionsPage() {
           <div className="modal" onClick={e => e.stopPropagation()}>
             <div className="modal__handle" />
             <h3 className="modal__title">Rate your session</h3>
-            <p className="modal__subtitle">How was your session with {ratingSession.counselor.name}?</p>
+            <p className="modal__subtitle">How was your session with {ratingSession.counselor?.name ?? 'your counselor'}?</p>
 
             <div className="star-rating" style={{ justifyContent: 'center', marginBottom: 20 }}>
               {[1, 2, 3, 4, 5].map(s => (
