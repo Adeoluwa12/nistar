@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { Users, CheckCircle, MessageCircle } from 'lucide-react'
-import { counselorsApi } from '../../api'
+import { counselorsApi, getMediaUrl } from '../../api'
+import { getErrorMessage } from '../../lib/errors'
 import { useAuthStore } from '../../stores/authStore'
 import Avatar from '../../components/shared/Avatar'
 import Spinner from '../../components/shared/Spinner'
@@ -12,14 +13,13 @@ import { useNavigate } from 'react-router-dom'
 export default function CounselorsPage() {
   const { user, isAuthenticated, setUser } = useAuthStore()
   const navigate = useNavigate()
-  const [selectedDept] = useState('')
   const [selectedCounselor, setSelectedCounselor] = useState<Counselor | null>(null)
 
   const hasAssigned = !!user?.assignedCounselor
 
   const { data, isLoading } = useQuery({
-    queryKey: ['counselors', selectedDept],
-    queryFn: () => counselorsApi.getAll(selectedDept ? { department: selectedDept } : {}),
+    queryKey: ['counselors'],
+    queryFn: () => counselorsApi.getAll(),
   })
 
   const counselors: Counselor[] = data?.data?.data ?? []
@@ -32,8 +32,7 @@ export default function CounselorsPage() {
       setSelectedCounselor(null)
     },
     onError: (err: unknown) => {
-      const msg = (err as { response?: { data?: { message?: string } } }).response?.data?.message || 'Request failed'
-      toast.error(msg)
+      toast.error(getErrorMessage(err, 'Request failed'))
     },
   })
 
@@ -49,7 +48,7 @@ export default function CounselorsPage() {
 
         <div style={{ padding: 16 }}>
           <div className="card" style={{ padding: 24, textAlign: 'center', marginBottom: 20 }}>
-            <Avatar src={c.avatar} name={c.name} size="xl" style={{ margin: '0 auto 16px' }} />
+            <Avatar src={getMediaUrl(c.avatar)} name={c.name} size="xl" style={{ margin: '0 auto 16px' }} />
             <h2 style={{ marginBottom: 4 }}>{c.name}</h2>
             {c.department && (
               <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 12px', background: 'var(--beige)', borderRadius: 20, fontSize: '0.875rem', color: 'var(--sage-dark)', fontWeight: 600, marginBottom: 12 }}>
@@ -123,7 +122,7 @@ export default function CounselorsPage() {
                 className="counselor-card card--hoverable"
                 onClick={() => setSelectedCounselor(c)}
               >
-                <Avatar src={c.avatar} name={c.name} size="lg" />
+                <Avatar src={getMediaUrl(c.avatar)} name={c.name} size="lg" />
                 <div className="counselor-card__info">
                   <div className="counselor-card__name">{c.name}</div>
                   {c.department && (
@@ -159,7 +158,7 @@ export default function CounselorsPage() {
           <div className="modal" onClick={e => e.stopPropagation()}>
             <div className="modal__handle" />
             <div style={{ textAlign: 'center', marginBottom: 20 }}>
-              <Avatar src={selectedCounselor.avatar} name={selectedCounselor.name} size="xl" style={{ margin: '0 auto 12px' }} />
+              <Avatar src={getMediaUrl(selectedCounselor.avatar)} name={selectedCounselor.name} size="xl" style={{ margin: '0 auto 12px' }} />
               <h3 style={{ marginBottom: 4 }}>{selectedCounselor.name}</h3>
               {selectedCounselor.department && (
                 <span className="tag tag--sage">{selectedCounselor.department.icon} {selectedCounselor.department.name}</span>

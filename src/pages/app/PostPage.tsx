@@ -3,7 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Heart, MessageCircle, Share2, ArrowLeft, Send, Trash2 } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
-import { postsApi, commentsApi } from '../../api'
+import { postsApi, commentsApi, getMediaUrl } from '../../api'
 import { useAuthStore } from '../../stores/authStore'
 import Avatar from '../../components/shared/Avatar'
 import Spinner from '../../components/shared/Spinner'
@@ -20,28 +20,34 @@ export default function PostPage() {
   const [isAnon, setIsAnon] = useState(false)
   const [liked, setLiked] = useState(false)
   const [likeCount, setLikeCount] = useState(0)
+  const [syncKey, setSyncKey] = useState<string | null>(null)
 
   const { data, isLoading } = useQuery({
     queryKey: ['post', slug],
-    queryFn: async () => {
-      const res = await postsApi.getOne(slug!)
-      const p = res.data?.data?.post
-      if (p) {
-        setLikeCount(p.likeCount)
-        setLiked(p.likes?.includes(user?._id ?? '') ?? false)
-      }
-      return res
-    },
+    queryFn: () => postsApi.getOne(slug!),
   })
 
   const post = data?.data?.data?.post
   const comments: Comment[] = data?.data?.data?.comments ?? []
+
+  // Sync local like state to the loaded post during render (not in an effect)
+  // so there are no cascading renders. Re-syncs whenever the post/like data
+  // or current user changes.
+  const nextSyncKey = post ? `${post._id}:${post.likeCount}:${user?._id ?? ''}` : null
+  if (post && nextSyncKey !== syncKey) {
+    setSyncKey(nextSyncKey)
+    setLikeCount(post.likeCount)
+    setLiked(post.likes?.includes(user?._id ?? '') ?? false)
+  }
 
   const likeMut = useMutation({
     mutationFn: () => postsApi.like(post!._id),
     onSuccess: (res) => {
       setLiked(res.data.data.liked)
       setLikeCount(res.data.data.likeCount)
+      qc.invalidateQueries({ queryKey: ['post', slug] })
+      qc.invalidateQueries({ queryKey: ['posts'] })
+      qc.invalidateQueries({ queryKey: ['my-posts'] })
     },
   })
 
@@ -50,6 +56,8 @@ export default function PostPage() {
     onSuccess: () => {
       setComment('')
       qc.invalidateQueries({ queryKey: ['post', slug] })
+      qc.invalidateQueries({ queryKey: ['posts'] })
+      qc.invalidateQueries({ queryKey: ['my-posts'] })
       toast.success('Comment added')
     },
     onError: () => toast.error('Failed to add comment'),
@@ -57,7 +65,12 @@ export default function PostPage() {
 
   const deleteCommentMut = useMutation({
     mutationFn: (id: string) => commentsApi.delete(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['post', slug] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['post', slug] })
+      qc.invalidateQueries({ queryKey: ['posts'] })
+      qc.invalidateQueries({ queryKey: ['my-posts'] })
+      toast.success('Comment deleted')
+    },
   })
 
   const handleShare = async () => {
@@ -101,7 +114,7 @@ export default function PostPage() {
         <h1 style={{ marginBottom: 20, lineHeight: 1.2 }}>{post.title}</h1>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24, paddingBottom: 24, borderBottom: '1px solid var(--border-light)' }}>
-          <Avatar src={post.isAnonymous ? undefined : post.author.avatar} name={authorName} size="md" />
+          <Avatar src={post.isAnonymous ? undefined : getMediaUrl(post.author.avatar)} name={authorName} size="md" />
           <div>
             <div style={{ fontWeight: 600, fontSize: '0.9375rem' }}>{authorName}</div>
             <div style={{ fontSize: '0.8125rem', color: 'var(--text-light)' }}>
@@ -112,12 +125,13 @@ export default function PostPage() {
 
         {post.coverImage && (
           <div style={{ marginBottom: 28, borderRadius: 'var(--radius-md)', overflow: 'hidden', maxHeight: 400 }}>
-            <img src={post.coverImage} alt={post.title} style={{ width: '100%', objectFit: 'cover' }} />
+            <img src={getMediaUrl(post.coverImage)} alt={post.title} style={{ width: '100%', objectFit: 'cover' }} />
           </div>
         )}
 
-        <div style={{ fontSize: '1.0625rem', lineHeight: 1.8 }}
-          dangerouslySetInnerHTML={{ __html: post.content.replace(/\n/g, '<br/>') }} />
+        <div style={{ fontSize: '1.0625rem', lineHeight: 1.8, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+          {post.content}
+        </div>
 
         <div style={{ display: 'flex', gap: 16, marginTop: 32, paddingTop: 24, borderTop: '1px solid var(--border-light)' }}>
           <button
@@ -144,7 +158,7 @@ export default function PostPage() {
           {isAuthenticated ? (
             <div style={{ marginBottom: 28 }}>
               <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-                <Avatar src={user?.avatar} name={user?.name ?? 'U'} size="md" />
+                <Avatar src={getMediaUrl(user?.avatar)} name={user?.name ?? 'U'} size="md" />
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
                   <textarea className="form-input" placeholder="Share your thoughts…" value={comment}
                     onChange={e => setComment(e.target.value)} rows={3} maxLength={2000} />
@@ -173,7 +187,7 @@ export default function PostPage() {
               const canDelete = user?._id === c.author._id || user?.role === 'department_admin' || user?.role === 'super_admin'
               return (
                 <div key={c._id} style={{ display: 'flex', gap: 12 }}>
-                  <Avatar src={c.isAnonymous ? undefined : c.author.avatar} name={cName} size="sm" />
+                  <Avatar src={c.isAnonymous ? undefined : getMediaUrl(c.author.avatar)} name={cName} size="sm" />
                   <div style={{ flex: 1, background: 'var(--beige)', borderRadius: 'var(--radius-md)', padding: '12px 16px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
                       <span style={{ fontWeight: 600, fontSize: '0.875rem' }}>{cName}</span>
@@ -194,7 +208,7 @@ export default function PostPage() {
                       <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--border-light)', display: 'flex', flexDirection: 'column', gap: 10 }}>
                         {c.replies.map(r => (
                           <div key={r._id} style={{ display: 'flex', gap: 8 }}>
-                            <Avatar src={r.isAnonymous ? undefined : r.author.avatar} name={r.isAnonymous ? 'Anonymous' : r.author.name} size="sm" />
+                            <Avatar src={r.isAnonymous ? undefined : getMediaUrl(r.author.avatar)} name={r.isAnonymous ? 'Anonymous' : r.author.name} size="sm" />
                             <div>
                               <span style={{ fontWeight: 600, fontSize: '0.8125rem' }}>{r.isAnonymous ? 'Anonymous' : r.author.name}</span>
                               <p style={{ fontSize: '0.875rem', lineHeight: 1.6, margin: '2px 0 0' }}>{r.content}</p>

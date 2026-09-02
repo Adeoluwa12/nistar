@@ -2,13 +2,14 @@ import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Image, X, ArrowLeft } from 'lucide-react'
 import { postsApi } from '../../api'
+import { getErrorMessage } from '../../lib/errors'
 import toast from 'react-hot-toast'
 
 export default function WritePostPage() {
   const navigate = useNavigate()
   const [form, setForm] = useState({
     title: '', content: '', excerpt: '', tags: '', category: '',
-    status: 'published', isAnonymous: false, allowComments: true,
+    status: 'published', isAnonymous: false, allowComments: true, visibility: 'public' as 'public' | 'private',
   })
   const [coverPreview, setCoverPreview] = useState<string | null>(null)
   const [coverFile, setCoverFile] = useState<File | null>(null)
@@ -47,14 +48,14 @@ export default function WritePostPage() {
       fd.append('status', status || form.status)
       fd.append('isAnonymous', String(form.isAnonymous))
       fd.append('allowComments', String(form.allowComments))
+      fd.append('visibility', form.visibility)
       if (coverFile) fd.append('image', coverFile)
 
       await postsApi.create(fd)
       toast.success(status === 'draft' ? 'Saved as draft' : 'Post published! 🎉')
       navigate('/feed')
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { message?: string } } }).response?.data?.message || 'Failed to publish'
-      toast.error(msg)
+      toast.error(getErrorMessage(err, 'Failed to publish'))
     } finally {
       setLoading(false)
     }
@@ -206,6 +207,21 @@ export default function WritePostPage() {
               type="checkbox"
               checked={form.allowComments}
               onChange={e => setForm(f => ({ ...f, allowComments: e.target.checked }))}
+              style={{ width: 20, height: 20, accentColor: 'var(--sage)', cursor: 'pointer' }}
+            />
+          </label>
+
+          <div style={{ height: 1, background: 'var(--border)' }} />
+
+          <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}>
+            <div>
+              <div style={{ fontWeight: 600, fontSize: '0.9375rem' }}>Private post</div>
+              <div style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>Only visible to you and your assigned professional</div>
+            </div>
+            <input
+              type="checkbox"
+              checked={form.visibility === 'private'}
+              onChange={e => setForm(f => ({ ...f, visibility: e.target.checked ? 'private' : 'public' }))}
               style={{ width: 20, height: 20, accentColor: 'var(--sage)', cursor: 'pointer' }}
             />
           </label>

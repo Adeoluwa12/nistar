@@ -1,73 +1,102 @@
-# React + TypeScript + Vite
+# Nistar — Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Nistar is a web-based **mental health community platform**. This repository is the
+**React + TypeScript + Vite** frontend (a PWA). It talks to the separate
+`nistar-api` (Express + MongoDB) backend over REST and Socket.IO.
 
-Currently, two official plugins are available:
+Users can read and write community posts, find and chat with counselors, book
+counseling sessions, receive notifications, and (for admins) moderate content and
+manage users, departments and applications.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Tech stack
 
-## React Compiler
+- **React 19** + **TypeScript**, bundled with **Vite 8**
+- **react-router-dom v7** for routing
+- **Zustand** for auth state (persisted to `localStorage`)
+- **TanStack Query** for server state / data fetching
+- **Axios** HTTP client with a 401 → refresh-token interceptor
+- **socket.io-client** for real-time chat, typing and presence
+- **vite-plugin-pwa** for PWA support
+- `lucide-react` icons, `react-hot-toast` notifications, `date-fns`
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Prerequisites
 
-## Expanding the ESLint configuration
+- Node.js 20+ (or 22+)
+- npm (this project is standardized on **npm** / `package-lock.json` — do not
+  commit `pnpm-lock.yaml` or `yarn.lock`)
+- A running instance of the `nistar-api` backend
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Getting started
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
+cp .env.example .env   # then edit values
+npm run dev            # http://localhost:3000
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Environment variables
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+Create a `.env` file (it is git-ignored — never commit it). See `.env.example`:
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+| Variable                | Description                                            |
+|-------------------------|--------------------------------------------------------|
+| `VITE_API_BASE_URL`     | Base URL of the `nistar-api` backend (REST)            |
+| `VITE_SOCKET_URL`       | Base URL for the Socket.IO connection                  |
+| `VITE_GOOGLE_CLIENT_ID` | Google OAuth client ID (public; used for Google login) |
+
+> Note: all `VITE_*` variables are embedded into the client bundle and are
+> therefore **public**. Do not put server-side secrets here.
+
+## Scripts
+
+| Command           | Description                                        |
+|-------------------|----------------------------------------------------|
+| `npm run dev`     | Start the Vite dev server on port 3000             |
+| `npm run build`   | Type-check (`tsc -b`) and build for production     |
+| `npm run preview` | Preview the production build locally               |
+| `npm run lint`    | Run ESLint over the project                        |
+
+## Project structure
+
 ```
+src/
+├── main.tsx                 # App entry
+├── App.tsx                  # Router, QueryClient, auth bootstrap, routes
+├── index.css                # Global styles / design tokens
+├── api/index.ts             # Axios instance + domain API clients + getMediaUrl
+├── lib/
+│   ├── errors.ts            # getErrorMessage() helper
+│   └── socket.ts            # shared Socket.IO client (getSocket/disconnectSocket)
+├── stores/authStore.ts      # Zustand auth store (persisted)
+├── types/index.ts           # Shared TypeScript types
+├── components/
+│   ├── layout/              # AppLayout, ProtectedRoute
+│   ├── posts/               # PostCard
+│   └── shared/              # Avatar, Spinner
+└── pages/
+    ├── auth/                # login, register, forgot/reset, verify (one file)
+    ├── app/                 # landing, feed, post, write, counselors, chat, etc.
+    └── admin/               # AdminPage
+```
+
+## Routes
+
+Public: `/login`, `/register`, `/forgot-password`, `/reset-password`,
+`/verify-email`, `/` (landing), `/feed`, `/posts/:slug`, `/counselors`.
+
+Authenticated: `/posts/new`, `/chat`, `/profile`, `/notifications`, `/sessions`,
+`/change-password`.
+
+Admin (`super_admin` / `department_admin`): `/admin`.
+
+`ProtectedRoute` enforces authentication and optional role restrictions. Unknown
+routes redirect to `/feed`.
+
+## Notes
+
+- The auth token is stored under `localStorage["nistar_token"]` and attached as a
+  `Bearer` header; on `401` the Axios interceptor transparently refreshes it and
+  retries the request, or clears the session and redirects to `/login`.
+- Server media paths (e.g. `/uploads/...`) should be resolved with
+  `getMediaUrl()` from `src/api` before use in `<img>`/`<a>`.
+- On load, `AuthBootstrap` re-validates the persisted session via `/auth/me`.

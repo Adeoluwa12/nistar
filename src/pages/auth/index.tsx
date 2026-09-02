@@ -1,8 +1,10 @@
-import { useState, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Eye, EyeOff, Mail, Lock, User, ArrowLeft } from 'lucide-react'
 import { authApi } from '../../api'
 import { useAuthStore } from '../../stores/authStore'
+import { getErrorMessage } from '../../lib/errors'
+import GoogleButton from '../../components/auth/GoogleButton'
 import toast from 'react-hot-toast'
 
 // ─── Shared layout ───────────────────────────────────────────────────────────
@@ -84,7 +86,7 @@ export function LoginPage() {
       if (role === 'super_admin' || role === 'department_admin') navigate('/admin')
       else navigate('/feed')
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { message?: string } } }).response?.data?.message || 'Login failed'
+      const msg = getErrorMessage(err, 'Login failed')
       toast.error(msg)
       if (msg.toLowerCase().includes('verify')) {
         setErrors({ email: 'Please verify your email before logging in.' })
@@ -139,6 +141,8 @@ export function LoginPage() {
           </button>
         </form>
 
+        <GoogleButton />
+
         <div className="auth-footer">
           Don't have an account? <Link to="/register">Create one</Link>
         </div>
@@ -175,8 +179,7 @@ export function RegisterPage() {
       await authApi.register({ name: form.name, email: form.email, password: form.password })
       setDone(true)
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { message?: string } } }).response?.data?.message || 'Registration failed'
-      toast.error(msg)
+      toast.error(getErrorMessage(err, 'Registration failed'))
     } finally {
       setLoading(false)
     }
@@ -265,6 +268,8 @@ export function RegisterPage() {
             {loading ? <span className="spinner spinner--sm" style={{ borderTopColor: '#fff' }} /> : 'Create account'}
           </button>
         </form>
+
+        <GoogleButton />
 
         <div className="auth-footer">
           Already have an account? <Link to="/login">Sign in</Link>
@@ -370,8 +375,7 @@ export function ResetPasswordPage() {
       toast.success('Password reset successfully!')
       setTimeout(() => navigate('/login'), 2000)
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { message?: string } } }).response?.data?.message || 'Reset failed'
-      toast.error(msg)
+      toast.error(getErrorMessage(err, 'Reset failed'))
     } finally {
       setLoading(false)
     }
@@ -437,20 +441,22 @@ export function VerifyEmailPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const token = searchParams.get('token') || ''
-  const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading')
+  // Derive the no-token error state synchronously so the effect only ever sets
+  // state from async callbacks (avoids setState-in-effect cascading renders).
+  const [status, setStatus] = useState<'loading' | 'success' | 'error'>(token ? 'loading' : 'error')
 
-  const verify = useCallback(async () => {
-    if (!token) { setStatus('error'); return }
-    try {
-      await authApi.verifyEmail(token)
-      setStatus('success')
-      toast.success('Email verified! Welcome to Nistar 💚')
-    } catch {
-      setStatus('error')
-    }
+  useEffect(() => {
+    if (!token) return
+    let cancelled = false
+    authApi.verifyEmail(token)
+      .then(() => {
+        if (cancelled) return
+        setStatus('success')
+        toast.success('Email verified! Welcome to Nistar 💚')
+      })
+      .catch(() => { if (!cancelled) setStatus('error') })
+    return () => { cancelled = true }
   }, [token])
-
-  useState(() => { verify() })
 
   return (
     <AuthShell>
