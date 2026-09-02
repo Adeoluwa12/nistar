@@ -1,7 +1,9 @@
+import { useEffect, useState } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import {
   Home, Users, MessageCircle, User, Bell, PenSquare,
-  LayoutDashboard, Calendar, LogIn, UserPlus,
+  LayoutDashboard, Calendar, LogIn, UserPlus, Menu, X,
+  ShieldCheck, Heart,
 } from 'lucide-react'
 import { useAuthStore } from '../../stores/authStore'
 import Avatar from '../shared/Avatar'
@@ -11,6 +13,7 @@ import { useQuery } from '@tanstack/react-query'
 export default function AppLayout() {
   const { user, isAuthenticated } = useAuthStore()
   const navigate = useNavigate()
+  const [drawerOpen, setDrawerOpen] = useState(false)
 
   const { data: notifData } = useQuery({
     queryKey: ['notifications'],
@@ -23,12 +26,31 @@ export default function AppLayout() {
   const isAdmin = user?.role === 'super_admin' || user?.role === 'department_admin'
   const isCounselor = user?.role === 'counselor'
 
+  useEffect(() => {
+    if (drawerOpen) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+    return () => { document.body.style.overflow = '' }
+  }, [drawerOpen])
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setDrawerOpen(false)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
+
+  const closeDrawer = () => setDrawerOpen(false)
+
   return (
     <div className="app-layout">
       {/* ── Desktop Sidebar (Visible on min-width: 768px) ────────────────────── */}
       <aside className="desktop-sidebar" aria-label="Desktop navigation">
         <div className="desktop-sidebar__header">
-          <NavLink to="/feed" className="desktop-sidebar__logo">
+          <NavLink to="/" className="desktop-sidebar__logo">
             Nis<span>tar</span>
           </NavLink>
           <p className="desktop-sidebar__tagline">Safe space. Real support.</p>
@@ -159,7 +181,17 @@ export default function AppLayout() {
 
       {/* ── Mobile Top Nav (Visible on screens < 768px) ───────────────────────── */}
       <nav className="topnav">
-        <NavLink to="/feed" className="topnav__logo">
+        <button
+          type="button"
+          className="topnav__menu-btn"
+          aria-label="Open menu"
+          aria-expanded={drawerOpen}
+          aria-controls="mobile-drawer"
+          onClick={() => setDrawerOpen(true)}
+        >
+          <Menu size={22} strokeWidth={2} />
+        </button>
+        <NavLink to="/" className="topnav__logo">
           Nis<span>tar</span>
         </NavLink>
         <div className="topnav__actions">
@@ -210,10 +242,190 @@ export default function AppLayout() {
         </div>
       </nav>
 
+      {/* ── Mobile Drawer Sidebar ─────────────────────────────────────────────── */}
+      <div
+        className={`drawer-overlay${drawerOpen ? ' is-open' : ''}`}
+        onClick={closeDrawer}
+        aria-hidden={!drawerOpen}
+      />
+      <aside
+        id="mobile-drawer"
+        className={`drawer${drawerOpen ? ' is-open' : ''}`}
+        aria-label="Mobile navigation"
+        aria-hidden={!drawerOpen}
+      >
+        <div className="drawer__header">
+          <NavLink to="/" className="drawer__logo" onClick={closeDrawer}>
+            Nis<span>tar</span>
+          </NavLink>
+          <button
+            type="button"
+            className="drawer__close"
+            aria-label="Close menu"
+            onClick={closeDrawer}
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        {isAuthenticated && user && (
+          <NavLink to="/profile" className="drawer__user" onClick={closeDrawer}>
+            <Avatar src={getMediaUrl(user.avatar)} name={user.name} size="md" />
+            <div className="drawer__user-info">
+              <div className="drawer__user-name">{user.name}</div>
+              <div className="drawer__user-email">{user.email}</div>
+            </div>
+          </NavLink>
+        )}
+
+        <nav className="drawer__nav">
+          <NavLink to="/" end className="drawer__item" onClick={closeDrawer}>
+            <Home size={20} strokeWidth={1.8} />
+            <span>Home</span>
+          </NavLink>
+          <NavLink to="/feed" className="drawer__item" onClick={closeDrawer}>
+            <Home size={20} strokeWidth={1.8} />
+            <span>Feed</span>
+          </NavLink>
+          <NavLink to="/counselors" className="drawer__item" onClick={closeDrawer}>
+            <Users size={20} strokeWidth={1.8} />
+            <span>{isCounselor ? 'My Users' : 'Counselors'}</span>
+          </NavLink>
+          {isAuthenticated && (
+            <NavLink to="/chat" className="drawer__item" onClick={closeDrawer}>
+              <MessageCircle size={20} strokeWidth={1.8} />
+              <span>Chat</span>
+            </NavLink>
+          )}
+          {isAuthenticated && (
+            <NavLink to="/sessions" className="drawer__item" onClick={closeDrawer}>
+              <Calendar size={20} strokeWidth={1.8} />
+              <span>Sessions</span>
+            </NavLink>
+          )}
+          {isAuthenticated && (
+            <NavLink to="/notifications" className="drawer__item" onClick={closeDrawer}>
+              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                <Bell size={20} strokeWidth={1.8} />
+                {unreadCount > 0 && (
+                  <span className="drawer__badge">{unreadCount > 9 ? '9+' : unreadCount}</span>
+                )}
+              </div>
+              <span>Notifications</span>
+            </NavLink>
+          )}
+          {isAuthenticated && (
+            <NavLink to="/profile" className="drawer__item" onClick={closeDrawer}>
+              <User size={20} strokeWidth={1.8} />
+              <span>Profile & Settings</span>
+            </NavLink>
+          )}
+          {isAdmin && (
+            <NavLink to="/admin" className="drawer__item" onClick={closeDrawer}>
+              <LayoutDashboard size={20} strokeWidth={1.8} />
+              <span>Admin Dashboard</span>
+            </NavLink>
+          )}
+
+          <div className="drawer__divider" />
+
+          {isAuthenticated ? (
+            <NavLink to="/posts/new" className="drawer__cta" onClick={closeDrawer}>
+              <PenSquare size={18} />
+              <span>Write a Story</span>
+            </NavLink>
+          ) : (
+            <div className="drawer__auth">
+              <button
+                className="btn btn--primary btn--full"
+                onClick={() => { closeDrawer(); navigate('/register') }}
+              >
+                <UserPlus size={16} /> Join Nistar
+              </button>
+              <button
+                className="btn btn--secondary btn--full"
+                onClick={() => { closeDrawer(); navigate('/login') }}
+              >
+                <LogIn size={16} /> Sign in
+              </button>
+            </div>
+          )}
+        </nav>
+
+        <div className="drawer__footer">
+          <div className="drawer__footer-brand">
+            <Heart size={14} fill="var(--sage)" stroke="var(--sage)" />
+            <span>Safe space. Real support.</span>
+          </div>
+          <p className="drawer__footer-text">
+            <ShieldCheck size={12} /> Verified counselors · Moderated content
+          </p>
+        </div>
+      </aside>
+
       {/* ── Main Page Content ─────────────────────────────────────────────────── */}
       <main className="main-content">
         <Outlet />
       </main>
+
+      {/* ── Site Footer ───────────────────────────────────────────────────────── */}
+      <footer className="site-footer">
+        <div className="site-footer__inner">
+          <div className="site-footer__brand">
+            <div className="site-footer__logo">
+              Nis<span>tar</span>
+            </div>
+            <p className="site-footer__tagline">
+              A safe community for your mental health. Share stories, find support,
+              and connect with verified counselors.
+            </p>
+            <div className="site-footer__badge">
+              <ShieldCheck size={14} />
+              <span>Verified · Moderated · Private</span>
+            </div>
+          </div>
+
+          <div className="site-footer__col">
+            <h5>Explore</h5>
+            <NavLink to="/">Home</NavLink>
+            <NavLink to="/feed">Feed</NavLink>
+            <NavLink to="/counselors">Counselors</NavLink>
+            <NavLink to="/posts/new">Write a Story</NavLink>
+          </div>
+
+          <div className="site-footer__col">
+            <h5>Account</h5>
+            {isAuthenticated ? (
+              <>
+                <NavLink to="/profile">Profile</NavLink>
+                <NavLink to="/sessions">Sessions</NavLink>
+                <NavLink to="/notifications">Notifications</NavLink>
+                <NavLink to="/change-password">Change Password</NavLink>
+              </>
+            ) : (
+              <>
+                <NavLink to="/login">Sign in</NavLink>
+                <NavLink to="/register">Join Nistar</NavLink>
+                <NavLink to="/forgot-password">Forgot password</NavLink>
+              </>
+            )}
+          </div>
+
+          <div className="site-footer__col">
+            <h5>Support</h5>
+            <a href="mailto:hello@nistar.app">Contact us</a>
+            <a href="#">Community guidelines</a>
+            <a href="#">Privacy</a>
+            <a href="#">Terms</a>
+          </div>
+        </div>
+
+        <div className="site-footer__bottom">
+          <span>© {new Date().getFullYear()} Nistar. Made with care for mental wellness.</span>
+          <span className="site-footer__dot" aria-hidden>•</span>
+          <span>You are not alone.</span>
+        </div>
+      </footer>
 
       {/* ── Mobile Bottom Nav (Visible on screens < 768px) ────────────────────── */}
       {isAuthenticated && (
