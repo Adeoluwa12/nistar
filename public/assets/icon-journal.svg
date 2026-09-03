@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200" fill="none" stroke="#7a8c6f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Book outline -->
+  <path d="M40 60 L100 50 L100 150 L40 160 Z"/>
+  <path d="M100 50 L160 60 L160 160 L100 150 Z"/>
+  <path d="M100 50 L100 150"/>
+  
+  <!-- Lines on left page -->
+  <path d="M55 75 L85 70"/>
+  <path d="M55 90 L85 85"/>
+  <path d="M55 105 L85 100"/>
+  <path d="M55 120 L85 115"/>
+  
+  <!-- Plant on right page -->
+  <path d="M130 130 Q130 110 130 90"/>
+  <path d="M130 110 Q140 105 145 100"/>
+  <path d="M130 110 Q120 105 115 100"/>
+  <path d="M130 95 Q140 90 145 85"/>
+  <path d="M130 95 Q120 90 115 85"/>
+  
+  <!-- Pen/pencil -->
+  <path d="M155 85 L165 105 L158 112 L148 92 Z"/>
+  <path d="M165 105 L170 110"/>
+  
+  <!-- Sparkles -->
+  <path d="M80 35 L85 40"/>
+  <path d="M90 30 L92 38"/>
+  <path d="M105 35 L100 40"/>
+</svg>

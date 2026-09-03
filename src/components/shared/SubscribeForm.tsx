@@ -11,7 +11,7 @@ export default function SubscribeForm({ compact = false }: Props) {
 
   const mut = useMutation({
     mutationFn: () => subscribeApi.subscribe(email),
-    onSuccess: () => { toast.success("You're on the list 💚"); setEmail('') },
+    onSuccess: () => { toast.success("You're on the list"); setEmail('') },
     onError: (err) => toast.error(getErrorMessage(err, 'Could not subscribe')),
   })
 

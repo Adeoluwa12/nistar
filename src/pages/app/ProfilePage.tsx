@@ -111,9 +111,9 @@ export default function ProfilePage() {
 
   const roleLabel = user?.role === 'super_admin' ? '⭐ Super Admin'
     : user?.role === 'department_admin' ? '🛡 Department Admin'
-    : user?.role === 'counselor' ? '💚 Counselor'
+    : user?.role === 'counselor' ? 'Counselor'
     : user?.isAuthor ? '✍️ Nistar Author'
-    : '🌱 Community Member'
+    : 'Community Member'
 
   if (!user) return null
 
@@ -205,7 +205,7 @@ export default function ProfilePage() {
             </div>
           ) : myPosts.length === 0 ? (
             <div className="empty-state">
-              <div className="empty-state__icon">✏️</div>
+              <div className="empty-state__icon" aria-hidden="true" />
               <p className="empty-state__title">No posts yet</p>
               <p className="empty-state__text">Share your first story with the community.</p>
               <button className="btn btn--primary" style={{ marginTop: 16 }} onClick={() => navigate('/posts/new')}>

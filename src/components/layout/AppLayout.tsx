@@ -1,19 +1,39 @@
 import { useEffect, useState } from 'react'
-import { NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import {
   Home, Users, MessageCircle, User, Bell, PenSquare,
   LayoutDashboard, Calendar, LogIn, UserPlus, Menu, X,
-  ShieldCheck, Heart,
+  ShieldCheck, Heart, PanelLeftClose, PanelLeftOpen,
 } from 'lucide-react'
 import { useAuthStore } from '../../stores/authStore'
 import Avatar from '../shared/Avatar'
 import { userApi, getMediaUrl } from '../../api'
 import { useQuery } from '@tanstack/react-query'
 
+const SIDEBAR_COLLAPSED_KEY = 'nistar_sidebar_collapsed'
+
 export default function AppLayout() {
   const { user, isAuthenticated } = useAuthStore()
   const navigate = useNavigate()
+  const location = useLocation()
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === '1'
+    } catch {
+      return false
+    }
+  })
+
+  const isLanding = location.pathname === '/'
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(SIDEBAR_COLLAPSED_KEY, sidebarCollapsed ? '1' : '0')
+    } catch {
+      /* ignore */
+    }
+  }, [sidebarCollapsed])
 
   const { data: notifData } = useQuery({
     queryKey: ['notifications'],
@@ -46,186 +66,42 @@ export default function AppLayout() {
   const closeDrawer = () => setDrawerOpen(false)
 
   return (
-    <div className="app-layout">
-      {/* ── Desktop Sidebar (Visible on min-width: 768px) ────────────────────── */}
-      <aside className="desktop-sidebar" aria-label="Desktop navigation">
-        <div className="desktop-sidebar__header">
-          <NavLink to="/" className="desktop-sidebar__logo">
-            Nis<span>tar</span>
-          </NavLink>
-          <p className="desktop-sidebar__tagline">Safe space. Real support.</p>
-        </div>
-
-        <nav className="desktop-sidebar__nav">
-          <NavLink
-            to="/feed"
-            className={({ isActive }) => `desktop-sidebar__item${isActive ? ' active' : ''}`}
-          >
-            <Home size={20} strokeWidth={1.8} />
-            <span>Feed</span>
-          </NavLink>
-
-          <NavLink
-            to="/counselors"
-            className={({ isActive }) => `desktop-sidebar__item${isActive ? ' active' : ''}`}
-          >
-            <Users size={20} strokeWidth={1.8} />
-            <span>{isCounselor ? 'My Users' : 'Support'}</span>
-          </NavLink>
-
-          <NavLink
-            to="/chat"
-            className={({ isActive }) => `desktop-sidebar__item${isActive ? ' active' : ''}`}
-          >
-            <MessageCircle size={20} strokeWidth={1.8} />
-            <span>Chat</span>
-          </NavLink>
-
-          <NavLink
-            to="/sessions"
-            className={({ isActive }) => `desktop-sidebar__item${isActive ? ' active' : ''}`}
-          >
-            <Calendar size={20} strokeWidth={1.8} />
-            <span>Sessions</span>
-          </NavLink>
-
-          {isAuthenticated && (
-            <NavLink
-              to="/notifications"
-              className={({ isActive }) => `desktop-sidebar__item${isActive ? ' active' : ''}`}
-            >
-              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                <Bell size={20} strokeWidth={1.8} />
-                {unreadCount > 0 && (
-                  <span className="desktop-sidebar__badge">
-                    {unreadCount > 9 ? '9+' : unreadCount}
-                  </span>
-                )}
-              </div>
-              <span>Notifications</span>
-            </NavLink>
-          )}
-
-          {isAuthenticated && (
-            <NavLink
-              to="/profile"
-              className={({ isActive }) => `desktop-sidebar__item${isActive ? ' active' : ''}`}
-            >
-              <User size={20} strokeWidth={1.8} />
-              <span>Profile & Settings</span>
-            </NavLink>
-          )}
-
-          {isAdmin && (
-            <NavLink
-              to="/admin"
-              className={({ isActive }) => `desktop-sidebar__item${isActive ? ' active' : ''}`}
-            >
-              <LayoutDashboard size={20} strokeWidth={1.8} />
-              <span>Admin Dashboard</span>
-            </NavLink>
-          )}
-        </nav>
-
-        {isAuthenticated ? (
-          <div className="desktop-sidebar__action">
-            <button
-              className="btn btn--primary btn--full btn--lg"
-              onClick={() => navigate('/posts/new')}
-              style={{
-                gap: 10,
-                borderRadius: 'var(--radius-md)',
-                boxShadow: '0 4px 16px rgba(107,142,90,0.25)',
-              }}
-            >
-              <PenSquare size={18} />
-              <span>Write a Story</span>
-            </button>
-          </div>
-        ) : (
-          <div className="desktop-sidebar__auth-cta card" style={{ padding: 16, marginTop: 'auto' }}>
-            <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: 12 }}>
-              Join our safe community to share, connect, and receive support.
-            </p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <button
-                className="btn btn--primary btn--full btn--sm"
-                onClick={() => navigate('/register')}
-                style={{ gap: 6 }}
-              >
-                <UserPlus size={15} /> Join Nistar
-              </button>
-              <button
-                className="btn btn--secondary btn--full btn--sm"
-                onClick={() => navigate('/login')}
-                style={{ gap: 6 }}
-              >
-                <LogIn size={15} /> Sign in
-              </button>
-            </div>
-          </div>
-        )}
-
-        {isAuthenticated && user && (
-          <div className="desktop-sidebar__footer">
-            <NavLink to="/profile" className="desktop-sidebar__user">
-              <Avatar src={getMediaUrl(user.avatar)} name={user.name} size="md" />
-              <div className="desktop-sidebar__user-info">
-                <div className="desktop-sidebar__user-name">{user.name}</div>
-                <div className="desktop-sidebar__user-email">{user.email}</div>
-              </div>
-            </NavLink>
-          </div>
-        )}
-      </aside>
-
-      {/* ── Mobile Top Nav (Visible on screens < 768px) ───────────────────────── */}
-      <nav className="topnav">
-        <button
-          type="button"
-          className="topnav__menu-btn"
-          aria-label="Open menu"
-          aria-expanded={drawerOpen}
-          aria-controls="mobile-drawer"
-          onClick={() => setDrawerOpen(true)}
-        >
-          <Menu size={22} strokeWidth={2} />
-        </button>
-        <NavLink to="/" className="topnav__logo">
+    <div
+      className={`app-layout${isLanding ? ' is-landing' : ''}${sidebarCollapsed ? ' is-sidebar-collapsed' : ''}`}
+    >
+      {/* ── Desktop Header (Landing page only) ─────────────────────────────── */}
+      <header className="desktop-header" aria-label="Site header">
+        <NavLink to="/" className="desktop-header__logo">
           Nis<span>tar</span>
         </NavLink>
-        <div className="topnav__actions">
+        <nav className="desktop-header__nav" aria-label="Primary">
+          <NavLink to="/feed" className="desktop-header__link">Feed</NavLink>
+          <NavLink to="/counselors" className="desktop-header__link">Counselors</NavLink>
+        </nav>
+        <div className="desktop-header__actions">
           {isAuthenticated ? (
             <>
-              <NavLink
-                to="/notifications"
-                className="btn btn--icon btn--ghost"
-                style={{ position: 'relative' }}
+              <button
+                className="btn btn--ghost btn--sm"
+                onClick={() => navigate('/posts/new')}
               >
+                <PenSquare size={16} /> Write
+              </button>
+              <NavLink to="/notifications" className="btn btn--icon btn--ghost" style={{ position: 'relative' }}>
                 <Bell size={20} />
                 {unreadCount > 0 && (
                   <span
                     style={{
-                      position: 'absolute',
-                      top: 2,
-                      right: 2,
-                      background: 'var(--error)',
-                      color: '#fff',
-                      fontSize: '0.6rem',
-                      fontWeight: 700,
-                      width: 14,
-                      height: 14,
-                      borderRadius: '50%',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
+                      position: 'absolute', top: 2, right: 2, background: 'var(--error)',
+                      color: '#fff', fontSize: '0.6rem', fontWeight: 700, width: 14, height: 14,
+                      borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
                     }}
                   >
                     {unreadCount > 9 ? '9+' : unreadCount}
                   </span>
                 )}
               </NavLink>
-              <NavLink to="/profile">
+              <NavLink to="/profile" className="desktop-header__avatar">
                 <Avatar src={getMediaUrl(user?.avatar)} name={user?.name ?? 'U'} size="sm" />
               </NavLink>
             </>
@@ -235,10 +111,211 @@ export default function AppLayout() {
                 Sign in
               </button>
               <button className="btn btn--primary btn--sm" onClick={() => navigate('/register')}>
-                Join
+                Join Nistar
               </button>
             </>
           )}
+        </div>
+      </header>
+
+      {/* ── Desktop Sidebar (Hidden on landing page) ────────────────────────── */}
+      {!isLanding && (
+        <aside className="desktop-sidebar" aria-label="Desktop navigation">
+          <div className="desktop-sidebar__header">
+            <NavLink to="/" className="desktop-sidebar__logo" title="Home">
+              <span className="desktop-sidebar__logo-mark">N</span>
+              <span className="desktop-sidebar__logo-text">Nis<span>tar</span></span>
+            </NavLink>
+            <button
+              type="button"
+              className="desktop-sidebar__collapse-btn"
+              onClick={() => setSidebarCollapsed(v => !v)}
+              aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+              title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            >
+              {sidebarCollapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
+            </button>
+          </div>
+          <p className="desktop-sidebar__tagline">Safe space. Real support.</p>
+
+          <nav className="desktop-sidebar__nav">
+            <NavLink
+              to="/feed"
+              className={({ isActive }) => `desktop-sidebar__item${isActive ? ' active' : ''}`}
+              title="Feed"
+            >
+              <Home size={20} strokeWidth={1.8} />
+              <span className="desktop-sidebar__label">Feed</span>
+            </NavLink>
+
+            <NavLink
+              to="/counselors"
+              className={({ isActive }) => `desktop-sidebar__item${isActive ? ' active' : ''}`}
+              title={isCounselor ? 'My Users' : 'Support'}
+            >
+              <Users size={20} strokeWidth={1.8} />
+              <span className="desktop-sidebar__label">{isCounselor ? 'My Users' : 'Support'}</span>
+            </NavLink>
+
+            <NavLink
+              to="/chat"
+              className={({ isActive }) => `desktop-sidebar__item${isActive ? ' active' : ''}`}
+              title="Chat"
+            >
+              <MessageCircle size={20} strokeWidth={1.8} />
+              <span className="desktop-sidebar__label">Chat</span>
+            </NavLink>
+
+            <NavLink
+              to="/sessions"
+              className={({ isActive }) => `desktop-sidebar__item${isActive ? ' active' : ''}`}
+              title="Sessions"
+            >
+              <Calendar size={20} strokeWidth={1.8} />
+              <span className="desktop-sidebar__label">Sessions</span>
+            </NavLink>
+
+            {isAuthenticated && (
+              <NavLink
+                to="/notifications"
+                className={({ isActive }) => `desktop-sidebar__item${isActive ? ' active' : ''}`}
+                title="Notifications"
+              >
+                <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                  <Bell size={20} strokeWidth={1.8} />
+                  {unreadCount > 0 && (
+                    <span className="desktop-sidebar__badge">
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </span>
+                  )}
+                </div>
+                <span className="desktop-sidebar__label">Notifications</span>
+              </NavLink>
+            )}
+
+            {isAuthenticated && (
+              <NavLink
+                to="/profile"
+                className={({ isActive }) => `desktop-sidebar__item${isActive ? ' active' : ''}`}
+                title="Profile & Settings"
+              >
+                <User size={20} strokeWidth={1.8} />
+                <span className="desktop-sidebar__label">Profile & Settings</span>
+              </NavLink>
+            )}
+
+            {isAdmin && (
+              <NavLink
+                to="/admin"
+                className={({ isActive }) => `desktop-sidebar__item${isActive ? ' active' : ''}`}
+                title="Admin Dashboard"
+              >
+                <LayoutDashboard size={20} strokeWidth={1.8} />
+                <span className="desktop-sidebar__label">Admin Dashboard</span>
+              </NavLink>
+            )}
+          </nav>
+
+          {isAuthenticated ? (
+            <div className="desktop-sidebar__action">
+              <button
+                className="btn btn--primary btn--full btn--lg desktop-sidebar__write-btn"
+                onClick={() => navigate('/posts/new')}
+                style={{
+                  gap: 10,
+                  borderRadius: 'var(--radius-md)',
+                  boxShadow: '0 4px 16px rgba(107,142,90,0.25)',
+                }}
+                title="Write a Story"
+              >
+                <PenSquare size={18} />
+                <span className="desktop-sidebar__label">Write a Story</span>
+              </button>
+            </div>
+          ) : (
+            <div className="desktop-sidebar__auth-cta card" style={{ padding: 16, marginTop: 'auto' }}>
+              <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: 12 }}>
+                Join our safe community to share, connect, and receive support.
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <button
+                  className="btn btn--primary btn--full btn--sm"
+                  onClick={() => navigate('/register')}
+                  style={{ gap: 6 }}
+                >
+                  <UserPlus size={15} /> <span className="desktop-sidebar__label">Join Nistar</span>
+                </button>
+                <button
+                  className="btn btn--secondary btn--full btn--sm"
+                  onClick={() => navigate('/login')}
+                  style={{ gap: 6 }}
+                >
+                  <LogIn size={15} /> <span className="desktop-sidebar__label">Sign in</span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {isAuthenticated && user && (
+            <div className="desktop-sidebar__footer">
+              <NavLink to="/profile" className="desktop-sidebar__user" title={user.name}>
+                <Avatar src={getMediaUrl(user.avatar)} name={user.name} size="md" />
+                <div className="desktop-sidebar__user-info">
+                  <div className="desktop-sidebar__user-name">{user.name}</div>
+                  <div className="desktop-sidebar__user-email">{user.email}</div>
+                </div>
+              </NavLink>
+            </div>
+          )}
+        </aside>
+      )}
+
+      {/* ── Mobile Top Nav (Visible on screens < 768px) ───────────────────────── */}
+      <nav className="topnav">
+        <NavLink to="/" className="topnav__logo">
+          Nis<span>tar</span>
+        </NavLink>
+        <div className="topnav__actions">
+          {isAuthenticated && (
+            <NavLink
+              to="/notifications"
+              className="btn btn--icon btn--ghost"
+              style={{ position: 'relative' }}
+            >
+              <Bell size={20} />
+              {unreadCount > 0 && (
+                <span
+                  style={{
+                    position: 'absolute',
+                    top: 2,
+                    right: 2,
+                    background: 'var(--error)',
+                    color: '#fff',
+                    fontSize: '0.6rem',
+                    fontWeight: 700,
+                    width: 14,
+                    height: 14,
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
+            </NavLink>
+          )}
+          <button
+            type="button"
+            className="topnav__menu-btn"
+            aria-label="Open menu"
+            aria-expanded={drawerOpen}
+            aria-controls="mobile-drawer"
+            onClick={() => setDrawerOpen(true)}
+          >
+            <Menu size={22} strokeWidth={2} />
+          </button>
         </div>
       </nav>
 

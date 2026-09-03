@@ -63,7 +63,10 @@ export default function CategoriesPanel() {
       </div>
 
       {isLoading ? <Spinner center /> : categories.length === 0 ? (
-        <div className="empty-state"><p className="empty-state__title">No categories yet</p></div>
+        <div className="empty-state">
+          <div className="empty-state__icon" aria-hidden="true" />
+          <p className="empty-state__title">No categories yet</p>
+        </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {categories.map(c => (

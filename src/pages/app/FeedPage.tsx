@@ -108,7 +108,7 @@ export default function FeedPage() {
 
         {!isLoading && error && (
           <div className="empty-state" style={{ gridColumn: '1 / -1' }}>
-            <div className="empty-state__icon">😔</div>
+            <div className="empty-state__icon" aria-hidden="true" />
             <p className="empty-state__title">Couldn't load posts</p>
             <p className="empty-state__text">Check your connection and try again.</p>
           </div>
@@ -116,7 +116,7 @@ export default function FeedPage() {
 
         {!isLoading && !error && posts.length === 0 && (
           <div className="empty-state" style={{ gridColumn: '1 / -1' }}>
-            <div className="empty-state__icon">🌱</div>
+            <div className="empty-state__icon" aria-hidden="true" />
             <p className="empty-state__title">No posts yet</p>
             <p className="empty-state__text">
               {search || tag ? 'Try a different search or tag.' : 'Be the first to share your story.'}

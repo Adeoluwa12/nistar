@@ -122,7 +122,7 @@ export default function LibraryPage() {
 
       {isLoading ? <Spinner center /> : works.length === 0 ? (
         <div className="empty-state">
-          <div className="empty-state__icon">📚</div>
+          <div className="empty-state__icon" aria-hidden="true" />
           <p className="empty-state__title">The library is empty</p>
           <p className="empty-state__text">Check back soon for new books and stories.</p>
         </div>

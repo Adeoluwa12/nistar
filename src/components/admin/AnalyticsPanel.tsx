@@ -22,7 +22,12 @@ export default function AnalyticsPanel() {
   const a: Analytics | undefined = data?.data?.data
 
   if (isLoading) return <Spinner center />
-  if (!a) return <div className="empty-state"><p className="empty-state__title">No analytics available</p></div>
+  if (!a) return (
+    <div className="empty-state">
+      <div className="empty-state__icon" aria-hidden="true" />
+      <p className="empty-state__title">No analytics available</p>
+    </div>
+  )
 
   const roleEntries = Object.entries(a.usersByRole || {})
   const statusEntries = Object.entries(a.postsByStatus || {})

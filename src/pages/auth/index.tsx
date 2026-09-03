@@ -81,7 +81,7 @@ export function LoginPage() {
     try {
       const { data } = await authApi.login(form)
       setAuth(data.data.user, data.data.accessToken)
-      toast.success(`Welcome back, ${data.data.user.name.split(' ')[0]} 💚`)
+      toast.success(`Welcome back, ${data.data.user.name.split(' ')[0]}`)
       const role = data.data.user.role
       if (role === 'super_admin' || role === 'department_admin') navigate('/admin')
       else navigate('/feed')
@@ -189,7 +189,6 @@ export function RegisterPage() {
     return (
       <AuthShell>
         <div className="auth-card" style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: '3rem', marginBottom: 16 }}>💚</div>
           <h2 style={{ marginBottom: 8 }}>Check your inbox</h2>
           <p style={{ color: 'var(--text-secondary)', lineHeight: 1.7, marginBottom: 24 }}>
             We've sent a verification link to <strong>{form.email}</strong>. Click it to activate your account.
@@ -308,9 +307,8 @@ export function ForgotPasswordPage() {
           <ArrowLeft size={16} /> Back to sign in
         </Link>
 
-        {sent ? (
+          {sent ? (
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '2.5rem', marginBottom: 16 }}>📬</div>
             <h2 style={{ marginBottom: 8 }}>Check your email</h2>
             <p style={{ color: 'var(--text-secondary)', lineHeight: 1.7 }}>
               If an account with <strong>{email}</strong> exists, we've sent a reset link. It expires in 1 hour.
@@ -385,7 +383,6 @@ export function ResetPasswordPage() {
     return (
       <AuthShell>
         <div className="auth-card" style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: '2rem', marginBottom: 12 }}>⚠️</div>
           <h2>Invalid link</h2>
           <p style={{ color: 'var(--text-secondary)', margin: '12px 0 24px' }}>This reset link is invalid or has expired.</p>
           <Link to="/forgot-password" className="btn btn--primary btn--full">Request new link</Link>
@@ -403,7 +400,6 @@ export function ResetPasswordPage() {
 
         {done ? (
           <div style={{ textAlign: 'center', paddingTop: 16 }}>
-            <div style={{ fontSize: '2.5rem', marginBottom: 12 }}>✅</div>
             <p style={{ color: 'var(--text-secondary)' }}>Password updated. Redirecting to login…</p>
           </div>
         ) : (
@@ -452,7 +448,7 @@ export function VerifyEmailPage() {
       .then(() => {
         if (cancelled) return
         setStatus('success')
-        toast.success('Email verified! Welcome to Nistar 💚')
+        toast.success('Email verified! Welcome to Nistar')
       })
       .catch(() => { if (!cancelled) setStatus('error') })
     return () => { cancelled = true }
@@ -469,7 +465,6 @@ export function VerifyEmailPage() {
         )}
         {status === 'success' && (
           <>
-            <div style={{ fontSize: '3rem', marginBottom: 16 }}>💚</div>
             <h2 style={{ marginBottom: 8 }}>You're verified!</h2>
             <p style={{ color: 'var(--text-secondary)', marginBottom: 24 }}>Your account is ready. Welcome to Nistar.</p>
             <button className="btn btn--primary btn--full btn--lg" onClick={() => navigate('/login')}>
