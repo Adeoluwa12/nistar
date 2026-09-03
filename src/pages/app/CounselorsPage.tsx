@@ -27,7 +27,7 @@ export default function CounselorsPage() {
   const requestMut = useMutation({
     mutationFn: (counselorId: string) => counselorsApi.request({ counselorId }),
     onSuccess: (res) => {
-      toast.success('Counselor assigned! 💚')
+      toast.success('Counselor assigned!')
       setUser({ ...user!, assignedCounselor: res.data.data.counselor })
       setSelectedCounselor(null)
     },
@@ -111,7 +111,7 @@ export default function CounselorsPage() {
         <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
           {counselors.length === 0 ? (
             <div className="empty-state">
-              <div className="empty-state__icon">👥</div>
+              <div className="empty-state__icon" aria-hidden="true" />
               <p className="empty-state__title">No counselors available right now</p>
               <p className="empty-state__text">Please check back soon.</p>
             </div>

@@ -86,7 +86,7 @@ export default function NotificationsPage() {
 
       {!isLoading && notifications.length === 0 && (
         <div className="empty-state">
-          <Bell size={40} style={{ color: 'var(--border)', marginBottom: 12 }} />
+          <div className="empty-state__icon" aria-hidden="true" />
           <p className="empty-state__title">No notifications yet</p>
           <p className="empty-state__text">We'll let you know when something happens.</p>
         </div>

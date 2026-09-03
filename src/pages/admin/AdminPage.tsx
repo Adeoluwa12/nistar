@@ -431,7 +431,7 @@ export default function AdminPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {sessionsLoading ? <Spinner center /> : queueSessions.length === 0 ? (
               <div className="empty-state">
-                <Calendar size={36} style={{ color: 'var(--sage)', marginBottom: 12 }} />
+                <div className="empty-state__icon" aria-hidden="true" />
                 <p className="empty-state__title">Queue clear</p>
                 <p className="empty-state__text">No pending appointment requests.</p>
               </div>
@@ -482,7 +482,7 @@ export default function AdminPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {applicationsLoading ? <Spinner center /> : applications.length === 0 ? (
               <div className="empty-state">
-                <FileText size={36} style={{ color: 'var(--sage)', marginBottom: 12 }} />
+                <div className="empty-state__icon" aria-hidden="true" />
                 <p className="empty-state__title">No applications</p>
                 <p className="empty-state__text">No counselor applications to review.</p>
               </div>
@@ -542,7 +542,7 @@ export default function AdminPage() {
             {commentsLoading ? <Spinner center /> : (
               pendingComments.length === 0 ? (
                 <div className="empty-state">
-                  <CheckCircle size={36} style={{ color: 'var(--sage)', marginBottom: 12 }} />
+                  <div className="empty-state__icon" aria-hidden="true" />
                   <p className="empty-state__title">All clear!</p>
                   <p className="empty-state__text">No pending comments to review.</p>
                 </div>

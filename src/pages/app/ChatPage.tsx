@@ -145,7 +145,7 @@ export default function ChatPage() {
   if (conversations.length === 0) {
     return (
       <div className="empty-state">
-        <div className="empty-state__icon">💬</div>
+        <div className="empty-state__icon" aria-hidden="true" />
         <p className="empty-state__title">No conversations yet</p>
         <p className="empty-state__text">Connect with a counselor to start chatting.</p>
       </div>
@@ -217,7 +217,7 @@ export default function ChatPage() {
           <div className="chat-messages">
             {messages.length === 0 && (
               <div style={{ textAlign: 'center', padding: '32px 0', color: 'var(--text-light)', fontSize: '0.9rem' }}>
-                Start the conversation 💚
+                 Start the conversation
               </div>
             )}
 

@@ -33,7 +33,10 @@ export default function SubscribersPanel() {
       </div>
 
       {subscribers.length === 0 ? (
-        <div className="empty-state"><p className="empty-state__title">No subscribers yet</p></div>
+        <div className="empty-state">
+          <div className="empty-state__icon" aria-hidden="true" />
+          <p className="empty-state__title">No subscribers yet</p>
+        </div>
       ) : (
         <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
           {subscribers.map(s => (

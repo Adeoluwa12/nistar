@@ -45,7 +45,7 @@ export default function SessionsPage() {
     mutationFn: ({ id, rating, feedback }: { id: string; rating: number; feedback: string }) =>
       sessionsApi.rate(id, { rating, feedback }),
     onSuccess: () => {
-      toast.success('Thank you for your feedback! 💚')
+      toast.success('Thank you for your feedback!')
       qc.invalidateQueries({ queryKey: ['sessions'] })
       setRatingSession(null)
       setRating(0)
@@ -184,7 +184,7 @@ export default function SessionsPage() {
       <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
         {!isLoading && sessions.length === 0 && (
           <div className="empty-state">
-            <Calendar size={40} style={{ color: 'var(--border)', marginBottom: 12 }} />
+            <div className="empty-state__icon" aria-hidden="true" />
             <p className="empty-state__title">No sessions found</p>
             <p className="empty-state__text">
               {isUser ? 'Connect with a counselor to schedule your first session.' : 'You have no sessions in this category.'}

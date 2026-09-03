@@ -88,7 +88,7 @@ export default function PostPage() {
 
   if (!post) return (
     <div className="empty-state">
-      <div className="empty-state__icon">😔</div>
+      <div className="empty-state__icon" aria-hidden="true" />
       <p className="empty-state__title">Post not found</p>
       <Link to="/feed" className="btn btn--primary" style={{ marginTop: 16 }}>Back to feed</Link>
     </div>
@@ -225,6 +225,7 @@ export default function PostPage() {
 
           {comments.length === 0 && (
             <div className="empty-state" style={{ padding: '32px 0' }}>
+              <div className="empty-state__icon" aria-hidden="true" />
               <p className="empty-state__title">No comments yet</p>
               <p className="empty-state__text">Be the first to respond.</p>
             </div>

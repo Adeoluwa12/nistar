@@ -70,7 +70,7 @@ export default function GoogleButton() {
             try {
               const { data } = await authApi.googleAuth(resp.credential)
               setAuth(data.data.user, data.data.accessToken)
-              toast.success(`Welcome, ${data.data.user.name.split(' ')[0]} 💚`)
+               toast.success(`Welcome, ${data.data.user.name.split(' ')[0]}`)
               const role = data.data.user.role
               navigate(role === 'super_admin' || role === 'department_admin' ? '/admin' : '/feed')
             } catch (err) {
