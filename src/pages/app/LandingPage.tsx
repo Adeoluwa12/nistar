@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 
 function FeatureCard({ imageSrc, title, description }: { imageSrc: string; title: string; description: string }) {
@@ -42,7 +43,143 @@ function StepCard({ number, title, description }: { number: string; title: strin
   )
 }
 
+function useReveal<T extends HTMLElement>() {
+  const ref = useRef<T | null>(null)
+
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+
+    if (typeof window === 'undefined' || !('IntersectionObserver' in window)) {
+      el.querySelectorAll<HTMLElement>('.reveal').forEach(node => node.classList.add('is-visible'))
+      return
+    }
+
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
+    const observer = new IntersectionObserver(
+      entries => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            const node = entry.target as HTMLElement
+            node.classList.add('is-visible')
+            observer.unobserve(node)
+          }
+        })
+      },
+      { threshold: 0.15, rootMargin: '0px 0px -40px 0px' }
+    )
+
+    el.querySelectorAll<HTMLElement>('.reveal').forEach(node => {
+      if (reduced) node.classList.add('is-visible')
+      else observer.observe(node)
+    })
+
+    return () => observer.disconnect()
+  }, [])
+
+  return ref
+}
+
+function FaqItem({
+  id,
+  question,
+  answer,
+  isOpen,
+  onToggle,
+}: {
+  id: string
+  question: string
+  answer: string
+  isOpen: boolean
+  onToggle: () => void
+}) {
+  const panelId = `${id}-panel`
+  return (
+    <div className="landing-faq__item" data-open={isOpen ? 'true' : 'false'}>
+      <button
+        type="button"
+        className="landing-faq__question"
+        aria-expanded={isOpen}
+        aria-controls={panelId}
+        id={`${id}-trigger`}
+        onClick={onToggle}
+      >
+        <span>{question}</span>
+        <span className="landing-faq__icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19" />
+            <line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+        </span>
+      </button>
+      <div
+        className="landing-faq__answer"
+        id={panelId}
+        role="region"
+        aria-labelledby={`${id}-trigger`}
+      >
+        <div className="landing-faq__answer-inner">
+          <p className="landing-faq__answer-text">{answer}</p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+const FAQS = [
+  {
+    id: 'free',
+    q: 'Is Nistar free to use?',
+    a: 'Creating an account and exploring the Nistar community are free. If Nistar offers paid counseling sessions, any applicable session fees should be clearly shown before you book.',
+  },
+  {
+    id: 'real-name',
+    q: 'Do I have to use my real name?',
+    a: 'You should only share the information you are comfortable sharing. Profile and posting options make it clear what is visible to other community members, and Nistar encourages using only a display name you choose.',
+  },
+  {
+    id: 'visibility',
+    q: 'Who can see what I post?',
+    a: 'Community posts are visible according to Nistar\u2019s community and privacy settings. Before publishing, you can choose whether a post is shared as yourself or anonymously, and review what your profile shows to others.',
+  },
+  {
+    id: 'counselors',
+    q: 'How are counselors verified?',
+    a: 'Counselor profiles indicate the credentials and verification status provided when they joined Nistar. Verification reflects the information submitted during onboarding and may be updated over time.',
+  },
+  {
+    id: 'messaging',
+    q: 'How does private messaging work?',
+    a: 'Private messaging gives you a more personal space to communicate with a counselor. Depending on the features available, you can use it to ask questions, continue a conversation between sessions, and coordinate your support.',
+  },
+  {
+    id: 'delete',
+    q: 'Can I delete my posts or account?',
+    a: 'Your account and content remain under your control. Check your account settings for available deletion and privacy options. If you need help removing information, you can contact Nistar support.',
+  },
+  {
+    id: 'moderation',
+    q: 'How is the community moderated?',
+    a: 'Nista is built to be a supportive, respectful space. Community content is reviewed according to Nistar\u2019s community guidelines, with harmful, abusive, or unsafe content handled according to those rules.',
+  },
+  {
+    id: 'replacement',
+    q: 'Is Nistar a replacement for professional mental-health care?',
+    a: 'No. Nistar can provide community support, information, and access to counselors, but it should not be treated as a replacement for appropriate professional medical or mental-health care.',
+  },
+  {
+    id: 'crisis',
+    q: 'What should I do if I\u2019m in immediate danger or crisis?',
+    a: 'Nistar is not an emergency service. If you or someone else is in immediate danger, contact your local emergency service, go to the nearest emergency department, or contact an appropriate crisis service in your area.',
+  },
+]
+
 export default function LandingPage() {
+  const aboutRef = useReveal<HTMLDivElement>()
+  const faqRef = useReveal<HTMLDivElement>()
+  const [openFaq, setOpenFaq] = useState<string | null>(FAQS[0]?.id ?? null)
+
   return (
     <>
       {/* Hero */}
@@ -96,6 +233,79 @@ export default function LandingPage() {
           </div>
         </div>
       </div>
+
+      {/* What is Nistar? */}
+      <section className="landing-about" ref={aboutRef}>
+        <div className="landing-about__inner">
+          <div className="landing-about__content">
+            <p className="landing-about__eyebrow reveal">What is Nistar?</p>
+            <h2 className="landing-about__title reveal reveal--delay-1">
+              A place to be heard, <em>understood</em>, and supported.
+            </h2>
+            <p className="landing-about__copy reveal reveal--delay-2">
+              Nistar is a community where people can share what they are going through, find people
+              who understand, and connect with professional counselors when they need more support
+              — all in one safe, moderated space.
+            </p>
+            <p className="landing-about__copy reveal reveal--delay-2">
+              You don't have to know exactly what you need before you arrive. Start with a story, a
+              conversation, a question, or simply a place to listen.
+            </p>
+
+            <ul className="landing-about__points" role="list">
+              <li className="landing-about__point reveal reveal--delay-3">
+                <span className="landing-about__point-icon" aria-hidden="true">
+                  <img src="/assets/open-journal.svg" alt="" width={24} height={24} loading="lazy" />
+                </span>
+                <div>
+                  <div className="landing-about__point-title">Share</div>
+                  <p className="landing-about__point-desc">
+                    Tell your story, ask a question, or simply put your thoughts into words.
+                  </p>
+                </div>
+              </li>
+              <li className="landing-about__point reveal reveal--delay-3">
+                <span className="landing-about__point-icon" aria-hidden="true">
+                  <img src="/assets/supportive-hands.svg" alt="" width={24} height={24} loading="lazy" />
+                </span>
+                <div>
+                  <div className="landing-about__point-title">Connect</div>
+                  <p className="landing-about__point-desc">
+                    Find people who understand what you are going through — without judgment.
+                  </p>
+                </div>
+              </li>
+              <li className="landing-about__point reveal reveal--delay-3">
+                <span className="landing-about__point-icon" aria-hidden="true">
+                  <img src="/assets/shield-heart.svg" alt="" width={24} height={24} loading="lazy" />
+                </span>
+                <div>
+                  <div className="landing-about__point-title">Get support</div>
+                  <p className="landing-about__point-desc">
+                    Connect privately with a counselor when you are ready for professional support.
+                  </p>
+                </div>
+              </li>
+            </ul>
+
+            <Link to="/feed" className="landing-about__cta reveal reveal--delay-4">
+              Explore the community
+              <span className="landing-about__cta-arrow" aria-hidden="true">→</span>
+            </Link>
+          </div>
+
+          <div className="landing-about__media reveal reveal--slow">
+            <img
+              className="landing-about__image"
+              src="/assets/illustration-conversation.svg"
+              alt="Two people sitting together having a supportive conversation, surrounded by organic botanical forms"
+              width="600"
+              height="375"
+              loading="lazy"
+            />
+          </div>
+        </div>
+      </section>
 
       {/* Features */}
       <section className="landing-features">
@@ -215,7 +425,7 @@ export default function LandingPage() {
           <div className="landing-conversation__content">
             <h2 className="landing-conversation__title">Real conversations, real connection</h2>
             <p className="landing-conversation__text">
-              Nistar is built on the belief that talking about mental health should be as normal as talking about physical health.
+              Sometimes you need someone who understands. Sometimes you need someone who knows how to help. Nistar gives you space for both.
               Every message, every story, and every session is moderated to keep the space safe, respectful, and free from judgment.
             </p>
             <div className="landing-conversation__actions">
@@ -233,11 +443,10 @@ export default function LandingPage() {
       {/* Crisis */}
       <section className="landing-crisis">
         <div className="landing-crisis__inner">
-          <p className="landing-crisis__label">If you're in crisis</p>
+          <p className="landing-crisis__label">If you need urgent help</p>
           <h2 className="landing-crisis__title">You deserve immediate support</h2>
           <p className="landing-crisis__text">
-            Nistar is not an emergency service. If you or someone you know is in immediate danger,
-            please reach out to a crisis helpline now.
+            Nistar is not an emergency service. If you or someone you know is in immediate danger, contact an appropriate emergency or crisis service.
           </p>
           <div className="landing-crisis__actions">
             <a
@@ -255,17 +464,65 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* FAQ */}
+      <section className="landing-faq" ref={faqRef}>
+        <div className="landing-faq__inner">
+          <div className="landing-faq__header">
+            <p className="landing-faq__eyebrow reveal">Questions you might have</p>
+            <h2 className="landing-faq__title reveal reveal--delay-1">
+              Questions? We&apos;ve got answers.
+            </h2>
+            <p className="landing-faq__intro reveal reveal--delay-2">
+              Starting somewhere new can come with a few questions. Here are some of the things
+              people often want to know about Nistar.
+            </p>
+          </div>
+
+          <div className="landing-faq__list reveal reveal--delay-2">
+            {FAQS.map(item => (
+              <FaqItem
+                key={item.id}
+                id={`faq-${item.id}`}
+                question={item.q}
+                answer={item.a}
+                isOpen={openFaq === item.id}
+                onToggle={() => setOpenFaq(prev => (prev === item.id ? null : item.id))}
+              />
+            ))}
+          </div>
+
+          <div className="landing-faq__urgent reveal reveal--delay-3">
+            <div className="landing-faq__urgent-content">
+              <h3 className="landing-faq__urgent-title">Need urgent help?</h3>
+              <p className="landing-faq__urgent-text">
+                Nistar is here for support and connection, but it isn&apos;t an emergency service.
+                If you or someone else is in immediate danger, please contact your local emergency
+                service or an appropriate crisis resource.
+              </p>
+            </div>
+            <a
+              className="landing-faq__urgent-cta"
+              href="https://www.befrienders.org/"
+              target="_blank"
+              rel="noreferrer"
+            >
+              Find crisis resources →
+            </a>
+          </div>
+        </div>
+      </section>
+
       {/* Final CTA */}
       <section className="landing-final-cta">
         <div className="landing-final-cta__inner">
-          <h2 className="landing-final-cta__title">Ready to begin?</h2>
+          <h2 className="landing-final-cta__title">You don't have to carry it alone.</h2>
           <p className="landing-final-cta__text">
             Join a community that cares. Share your story, find support, and take the first step
             toward feeling better.
           </p>
           <div className="landing-hero__actions">
             <Link to="/register" className="btn btn--primary btn--lg">
-              Create free account
+              Join Nistar
             </Link>
             <Link to="/feed" className="btn btn--secondary btn--lg">
               Explore stories

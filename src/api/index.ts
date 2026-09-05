@@ -12,9 +12,9 @@ const api = axios.create({
 })
 
 /**
- * Converts a server-relative upload path (e.g. "/uploads/abc.jpg")
- * into a fully-qualified URL using the API base (e.g. "http://localhost:5000/uploads/abc.jpg").
- * Returns undefined when the value is falsy so it is safe to pass directly to <img src>.
+ * Returns the full URL for a media path. Cloudinary URLs are passed through
+ * as-is. Server-relative paths are resolved against the API base. Returns
+ * undefined when the value is falsy so it is safe to pass directly to <img src>.
  */
 export function getMediaUrl(path: string | undefined | null): string | undefined {
   if (!path) return undefined
