@@ -1,12 +1,10 @@
 import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  Camera, LogOut, Settings, ChevronRight, BookOpen,
-  User, Mail, Shield, Lock, Star, CheckCircle, FileText,
+  Camera, BookOpen, User, Mail, Shield, Lock, FileText, ChevronRight, Settings, CheckCircle,
 } from 'lucide-react'
 import { useQuery, useMutation } from '@tanstack/react-query'
-import { postsApi, userApi, authApi, counselorsApi, getMediaUrl } from '../../api'
-import { disconnectSocket } from '../../lib/socket'
+import { postsApi, userApi, counselorsApi, getMediaUrl } from '../../api'
 import { getErrorMessage } from '../../lib/errors'
 import { useAuthStore } from '../../stores/authStore'
 import Avatar from '../../components/shared/Avatar'
@@ -14,10 +12,19 @@ import PostCard from '../../components/posts/PostCard'
 import toast from 'react-hot-toast'
 import type { Post } from '../../types'
 
+type ProfileTab = 'posts' | 'profile' | 'account' | 'counselor'
+
+const TABS: { key: ProfileTab; label: string; icon: React.ReactNode }[] = [
+  { key: 'posts', label: 'My Posts', icon: <BookOpen size={15} /> },
+  { key: 'profile', label: 'Profile', icon: <User size={15} /> },
+  { key: 'account', label: 'Account', icon: <Settings size={15} /> },
+  { key: 'counselor', label: 'Counselor', icon: <Shield size={15} /> },
+]
+
 export default function ProfilePage() {
-  const { user, setUser, clearAuth } = useAuthStore()
+  const { user, setUser } = useAuthStore()
   const navigate = useNavigate()
-  const [tab, setTab] = useState<'posts' | 'settings'>('posts')
+  const [tab, setTab] = useState<ProfileTab>('posts')
   const [editBio, setEditBio] = useState(user?.bio ?? '')
   const [editName, setEditName] = useState(user?.name ?? '')
   const [saving, setSaving] = useState(false)
@@ -38,12 +45,10 @@ export default function ProfilePage() {
     const file = e.target.files?.[0]
     if (!file) return
 
-    // Validate file type
     if (!file.type.startsWith('image/')) {
       toast.error('Please select an image file')
       return
     }
-    // Validate file size (max 10MB)
     if (file.size > 10 * 1024 * 1024) {
       toast.error('Image must be smaller than 10MB')
       return
@@ -60,7 +65,6 @@ export default function ProfilePage() {
       toast.error(getErrorMessage(err, 'Failed to update photo — please try again'))
     } finally {
       setUploading(false)
-      // reset input so same file can be re-selected
       if (fileRef.current) fileRef.current.value = ''
     }
   }
@@ -80,16 +84,6 @@ export default function ProfilePage() {
     } finally {
       setSaving(false)
     }
-  }
-
-  const handleLogout = async () => {
-    try {
-      await authApi.logout()
-    } catch { /* silent */ }
-    disconnectSocket()
-    clearAuth()
-    navigate('/login')
-    toast.success('Signed out')
   }
 
   const applyMut = useMutation({
@@ -114,6 +108,9 @@ export default function ProfilePage() {
     : user?.role === 'counselor' ? 'Counselor'
     : user?.isAuthor ? '✍️ Nistar Author'
     : 'Community Member'
+
+  const showCounselorTab = user?.role === 'user'
+  const visibleTabs = showCounselorTab ? TABS : TABS.filter(t => t.key !== 'counselor')
 
   if (!user) return null
 
@@ -174,31 +171,24 @@ export default function ProfilePage() {
       </div>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', borderBottom: '1px solid var(--border-light)' }}>
-        {[
-          { key: 'posts', label: 'My Posts', icon: <BookOpen size={15} /> },
-          { key: 'settings', label: 'Settings', icon: <Settings size={15} /> },
-        ].map(t => (
+      <div className="profile-tabs" role="tablist">
+        {visibleTabs.map(t => (
           <button
             key={t.key}
-            onClick={() => setTab(t.key as 'posts' | 'settings')}
-            style={{
-              flex: 1, padding: '14px 8px', border: 'none', background: 'none',
-              fontFamily: 'var(--font)', fontWeight: 600, fontSize: '0.9rem',
-              color: tab === t.key ? 'var(--sage-dark)' : 'var(--text-light)',
-              borderBottom: tab === t.key ? '2px solid var(--sage)' : '2px solid transparent',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-              cursor: 'pointer', transition: 'color 0.2s',
-            }}
+            role="tab"
+            aria-selected={tab === t.key}
+            className={`profile-tab${tab === t.key ? ' profile-tab--active' : ''}`}
+            onClick={() => setTab(t.key)}
           >
-            {t.icon} {t.label}
+            {t.icon}
+            <span>{t.label}</span>
           </button>
         ))}
       </div>
 
       {/* Posts tab */}
       {tab === 'posts' && (
-        <div style={{ padding: 16 }}>
+        <div key="posts" className="profile-tab-content">
           {postsLoading ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {[1,2,3].map(i => <div key={i} className="skeleton" style={{ height: 160, borderRadius: 12 }} />)}
@@ -220,18 +210,16 @@ export default function ProfilePage() {
         </div>
       )}
 
-      {/* Settings tab */}
-      {tab === 'settings' && (
-        <div key={user?._id ?? 'anon'} style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 16 }}>
-
+      {/* Profile tab */}
+      {tab === 'profile' && (
+        <div key="profile" className="profile-tab-content">
           {/* Account info card */}
           <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
             <div className="settings-section-header">
-              <User size={15} />
+              <Mail size={15} />
               <span>Account Information</span>
             </div>
             <div style={{ padding: '0 20px 20px', display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {/* Email (read-only) */}
               <div className="settings-info-row">
                 <div className="settings-info-row__left">
                   <Mail size={14} className="settings-info-row__icon" />
@@ -246,10 +234,9 @@ export default function ProfilePage() {
                   </span>
                 )}
               </div>
-              {/* Role */}
               <div className="settings-info-row">
                 <div className="settings-info-row__left">
-                  <Star size={14} className="settings-info-row__icon" />
+                  <User size={14} className="settings-info-row__icon" />
                   <div>
                     <div className="settings-info-row__label">Role</div>
                     <div className="settings-info-row__value">{roleLabel}</div>
@@ -332,8 +319,12 @@ export default function ProfilePage() {
               </button>
             </div>
           </div>
+        </div>
+      )}
 
-          {/* Security card */}
+      {/* Account tab */}
+      {tab === 'account' && (
+        <div key="account" className="profile-tab-content">
           <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
             <div className="settings-section-header">
               <Shield size={15} />
@@ -390,64 +381,56 @@ export default function ProfilePage() {
               ))}
             </div>
           </div>
+        </div>
+      )}
 
-          {/* Counselor application */}
-          {user.role === 'user' && (
-            <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-              <div className="settings-section-header">
-                <FileText size={15} />
-                <span>Become a Counselor</span>
+      {/* Counselor tab */}
+      {tab === 'counselor' && showCounselorTab && (
+        <div key="counselor" className="profile-tab-content">
+          <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+            <div className="settings-section-header">
+              <FileText size={15} />
+              <span>Become a Counselor</span>
+            </div>
+            <div style={{ padding: '0 20px 20px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div className="form-group">
+                <label className="form-label">Statement <span style={{ color: 'var(--text-light)' }}>(optional)</span></label>
+                <textarea
+                  className="form-input"
+                  rows={3}
+                  value={applyStatement}
+                  onChange={e => setApplyStatement(e.target.value)}
+                  placeholder="Why do you want to be a counselor?"
+                  maxLength={5000}
+                />
               </div>
-              <div style={{ padding: '0 20px 20px', display: 'flex', flexDirection: 'column', gap: 14 }}>
-                <div className="form-group">
-                  <label className="form-label">Statement <span style={{ color: 'var(--text-light)' }}>(optional)</span></label>
-                  <textarea
-                    className="form-input"
-                    rows={3}
-                    value={applyStatement}
-                    onChange={e => setApplyStatement(e.target.value)}
-                    placeholder="Why do you want to be a counselor?"
-                    maxLength={5000}
-                  />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Supporting documents <span style={{ color: 'var(--text-light)' }}>(PDF, optional, up to 5)</span></label>
-                  <input
-                    ref={docRef}
-                    type="file"
-                    accept=".pdf,application/pdf"
-                    multiple
-                    style={{ display: 'none' }}
-                    onChange={e => setApplyDocs(Array.from(e.target.files || []))}
-                  />
-                  <button
-                    className="btn btn--secondary btn--sm"
-                    onClick={() => docRef.current?.click()}
-                  >
-                    {applyDocs.length > 0 ? `${applyDocs.length} file(s) selected` : 'Choose PDFs'}
-                  </button>
-                </div>
+              <div className="form-group">
+                <label className="form-label">Supporting documents <span style={{ color: 'var(--text-light)' }}>(PDF, optional, up to 5)</span></label>
+                <input
+                  ref={docRef}
+                  type="file"
+                  accept=".pdf,application/pdf"
+                  multiple
+                  style={{ display: 'none' }}
+                  onChange={e => setApplyDocs(Array.from(e.target.files || []))}
+                />
                 <button
-                  className="btn btn--primary"
-                  onClick={() => applyMut.mutate()}
-                  disabled={applyMut.isPending}
-                  style={{ alignSelf: 'flex-start' }}
+                  className="btn btn--secondary btn--sm"
+                  onClick={() => docRef.current?.click()}
                 >
-                  {applyMut.isPending ? 'Submitting…' : 'Apply'}
+                  {applyDocs.length > 0 ? `${applyDocs.length} file(s) selected` : 'Choose PDFs'}
                 </button>
               </div>
+              <button
+                className="btn btn--primary"
+                onClick={() => applyMut.mutate()}
+                disabled={applyMut.isPending}
+                style={{ alignSelf: 'flex-start' }}
+              >
+                {applyMut.isPending ? 'Submitting…' : 'Apply'}
+              </button>
             </div>
-          )}
-
-          {/* Sign out */}
-          <button
-            id="signout-btn"
-            className="btn btn--danger btn--full"
-            onClick={handleLogout}
-            style={{ gap: 8, marginTop: 4 }}
-          >
-            <LogOut size={16} /> Sign out
-          </button>
+          </div>
         </div>
       )}
     </div>
