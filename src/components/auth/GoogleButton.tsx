@@ -22,8 +22,7 @@ declare global {
 
 const GSI_SRC = 'https://accounts.google.com/gsi/client'
 const RAW_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined
-// Ignore the .env.example placeholder so the button stays hidden (and GIS never
-// errors) until a real client ID is configured.
+
 const CLIENT_ID = RAW_CLIENT_ID && RAW_CLIENT_ID !== 'your-google-client-id' ? RAW_CLIENT_ID : undefined
 
 const isPlaceholderClientId = (id: string | undefined) =>
@@ -70,7 +69,7 @@ export default function GoogleButton() {
             try {
               const { data } = await authApi.googleAuth(resp.credential)
               setAuth(data.data.user, data.data.accessToken)
-               toast.success(`Welcome, ${data.data.user.name.split(' ')[0]}`)
+              toast.success(`Welcome, ${data.data.user.name.split(' ')[0]}`)
               const role = data.data.user.role
               navigate(role === 'super_admin' || role === 'department_admin' ? '/admin' : '/feed')
             } catch (err) {
