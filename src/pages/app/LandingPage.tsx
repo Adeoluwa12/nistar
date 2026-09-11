@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import BirthdayBanner from '../../components/shared/BirthdayBanner'
 
 function FeatureCard({ imageSrc, title, description }: { imageSrc: string; title: string; description: string }) {
   return (
@@ -45,6 +46,9 @@ function StepCard({ number, title, description }: { number: string; title: strin
 export default function LandingPage() {
   return (
     <>
+      {/* ── Temporary Birthday Banner — remove after 13 Sep 2026 ── */}
+      <BirthdayBanner />
+
       {/* Hero */}
       <section className="landing-hero">
         <div className="blob blob--top-right" aria-hidden="true" />
