@@ -379,7 +379,7 @@ npm run setup   # seed super admin / setup
 
 ---
 
-## 12. Notes for an AI Continuing This Project
+## 12. Notes for anyone Continuing This Project
 
 - All backend controllers return `{ success, message?, data?, error? }` shapes via `sendError` / `sendSuccess` helpers.
 - The backend uses `AuthRequest` from `src/types/index.ts` to attach `req.user`.
