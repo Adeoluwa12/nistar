@@ -3,17 +3,19 @@ import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import {
   Home, Users, MessageCircle, User, Bell, PenSquare,
   LayoutDashboard, Calendar, LogIn, UserPlus, Menu, X,
-  ShieldCheck, Heart, PanelLeftClose, PanelLeftOpen,
+  ShieldCheck, Heart, PanelLeftClose, PanelLeftOpen, LogOut,
 } from 'lucide-react'
 import { useAuthStore } from '../../stores/authStore'
 import Avatar from '../shared/Avatar'
-import { userApi, getMediaUrl } from '../../api'
+import { userApi, getMediaUrl, authApi } from '../../api'
 import { useQuery } from '@tanstack/react-query'
+import { disconnectSocket } from '../../lib/socket'
+import toast from 'react-hot-toast'
 
 const SIDEBAR_COLLAPSED_KEY = 'nistar_sidebar_collapsed'
 
 export default function AppLayout() {
-  const { user, isAuthenticated } = useAuthStore()
+  const { user, isAuthenticated, clearAuth } = useAuthStore()
   const navigate = useNavigate()
   const location = useLocation()
   const [drawerOpen, setDrawerOpen] = useState(false)
@@ -24,6 +26,7 @@ export default function AppLayout() {
       return false
     }
   })
+  const [logoutModalOpen, setLogoutModalOpen] = useState(false)
 
   const isLanding = location.pathname === '/'
 
@@ -64,6 +67,16 @@ export default function AppLayout() {
   }, [])
 
   const closeDrawer = () => setDrawerOpen(false)
+
+  const handleLogout = async () => {
+    try {
+      await authApi.logout()
+    } catch { /* silent */ }
+    disconnectSocket()
+    clearAuth()
+    navigate('/login')
+    toast.success('Signed out')
+  }
 
   return (
     <div
@@ -265,6 +278,13 @@ export default function AppLayout() {
                   <div className="desktop-sidebar__user-email">{user.email}</div>
                 </div>
               </NavLink>
+              <button
+                className="btn btn--ghost btn--sm btn--full"
+                onClick={() => setLogoutModalOpen(true)}
+                style={{ marginTop: 8, color: 'var(--error)' }}
+              >
+                <LogOut size={16} /> Sign out
+              </button>
             </div>
           )}
         </aside>
@@ -402,6 +422,17 @@ export default function AppLayout() {
               <LayoutDashboard size={20} strokeWidth={1.8} />
               <span>Admin Dashboard</span>
             </NavLink>
+          )}
+
+          {isAuthenticated && (
+            <button
+              className="btn btn--ghost btn--full"
+              onClick={() => setLogoutModalOpen(true)}
+              style={{ color: 'var(--error)', justifyContent: 'flex-start' }}
+            >
+              <LogOut size={18} strokeWidth={1.8} />
+              <span>Sign out</span>
+            </button>
           )}
 
           <div className="drawer__divider" />
@@ -557,6 +588,35 @@ export default function AppLayout() {
             </NavLink>
           )}
         </nav>
+      )}
+
+      {/* ── Logout Confirmation Modal ─────────────────────────────────────────── */}
+      {logoutModalOpen && (
+        <div className="modal-overlay modal-overlay--center" onClick={() => setLogoutModalOpen(false)}>
+          <div className="modal modal--center" onClick={e => e.stopPropagation()}>
+            <div className="modal__handle" />
+            <h3 className="modal__title">Sign out?</h3>
+            <p className="modal__subtitle">
+              You will be signed out of your account. You can sign back in anytime.
+            </p>
+            <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
+              <button
+                className="btn btn--secondary"
+                style={{ flex: 1 }}
+                onClick={() => setLogoutModalOpen(false)}
+              >
+                Cancel
+              </button>
+              <button
+                className="btn btn--danger"
+                style={{ flex: 1 }}
+                onClick={handleLogout}
+              >
+                <LogOut size={16} /> Sign out
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

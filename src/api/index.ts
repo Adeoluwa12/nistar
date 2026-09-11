@@ -12,9 +12,9 @@ const api = axios.create({
 })
 
 /**
- * Converts a server-relative upload path (e.g. "/uploads/abc.jpg")
- * into a fully-qualified URL using the API base (e.g. "http://localhost:5000/uploads/abc.jpg").
- * Returns undefined when the value is falsy so it is safe to pass directly to <img src>.
+ * Returns the full URL for a media path. Cloudinary URLs are passed through
+ * as-is. Server-relative paths are resolved against the API base. Returns
+ * undefined when the value is falsy so it is safe to pass directly to <img src>.
  */
 export function getMediaUrl(path: string | undefined | null): string | undefined {
   if (!path) return undefined
@@ -117,7 +117,7 @@ export const authApi = {
 export const postsApi = {
   getAll: (params?: Record<string, string>) => api.get('/posts', { params }),
   getOne: (slug: string) => api.get(`/posts/${slug}`),
-  create: (data: FormData) => api.post('/posts', data, { headers: { 'Content-Type': 'multipart/form-data' } }),
+  create: (data: FormData) => api.post('/posts', data),
   update: (id: string, data: FormData | Record<string, unknown>) => api.put(`/posts/${id}`, data),
   delete: (id: string) => api.delete(`/posts/${id}`),
   like: (id: string) => api.post(`/posts/${id}/like`),
@@ -137,7 +137,7 @@ export const counselorsApi = {
   getOne: (id: string) => api.get(`/counselors/${id}`),
   request: (data: { counselorId?: string; departmentId?: string }) => api.post('/counselors/request', data),
   getMyUsers: (params?: Record<string, string>) => api.get('/counselors/my-users', { params }),
-  apply: (data: FormData) => api.post('/counselors/apply', data, { headers: { 'Content-Type': 'multipart/form-data' } }),
+  apply: (data: FormData) => api.post('/counselors/apply', data),
 }
 
 export const sessionsApi = {
@@ -157,8 +157,8 @@ export const chatApi = {
 }
 
 export const userApi = {
-  updateProfile: (data: FormData) => api.put('/users/profile', data, { headers: { 'Content-Type': 'multipart/form-data' } }),
-  updateCounselorProfile: (data: FormData) => api.put('/users/counselor-profile', data, { headers: { 'Content-Type': 'multipart/form-data' } }),
+  updateProfile: (data: FormData) => api.put('/users/profile', data),
+  updateCounselorProfile: (data: FormData) => api.put('/users/counselor-profile', data),
   getNotifications: (params?: Record<string, string>) => api.get('/users/notifications', { params }),
   markAllRead: () => api.put('/users/notifications/read-all'),
   markRead: (id: string) => api.put(`/users/notifications/${id}/read`),
@@ -204,7 +204,7 @@ export const adminApi = {
   updateCategory: (id: string, data: UpdateCategoryPayload) => api.put(`/admin/categories/${id}`, data),
   deleteCategory: (id: string) => api.delete(`/admin/categories/${id}`),
   // Library
-  createLibraryWork: (data: FormData) => api.post('/admin/library', data, { headers: { 'Content-Type': 'multipart/form-data' } }),
+  createLibraryWork: (data: FormData) => api.post('/admin/library', data),
   deleteLibraryWork: (id: string) => api.delete(`/admin/library/${id}`),
   // Mailing list + compliance + analytics
   getSubscribers: (params?: Record<string, string>) => api.get('/admin/subscribers', { params }),
