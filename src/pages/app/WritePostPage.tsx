@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Image, X, ArrowLeft, Bold, Italic, Heading1, Quote, List, Link as LinkIcon } from 'lucide-react'
 import { postsApi } from '../../api'
 import { getErrorMessage } from '../../lib/errors'
+import type { ApiResponse } from '../../types'
 import toast from 'react-hot-toast'
 
 type Tag = { id: string; text: string }
@@ -73,7 +74,7 @@ export default function WritePostPage() {
     })
   }, [content])
 
-  const handleTagKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleTagKeyUp = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault()
       const text = tagInput.trim()
@@ -88,7 +89,27 @@ export default function WritePostPage() {
       }
       setTags([...tags, { id: crypto.randomUUID(), text }])
       setTagInput('')
-    } else if (e.key === 'Backspace' && !tagInput && tags.length) {
+    }
+  }
+
+  const handleTagBlur = () => {
+    const text = tagInput.trim()
+    if (!text) return
+    if (tags.some(t => t.text.toLowerCase() === text.toLowerCase())) {
+      setTagInput('')
+      return
+    }
+    if (tags.length >= 8) return
+    setTags([...tags, { id: crypto.randomUUID(), text }])
+    setTagInput('')
+  }
+
+  const handleTagKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      return
+    }
+    if (e.key === 'Backspace' && !tagInput && tags.length) {
       setTags(tags.slice(0, -1))
     }
   }
@@ -113,7 +134,7 @@ export default function WritePostPage() {
       if (coverFile) fd.append('image', coverFile)
 
       const res = await postsApi.create(fd)
-      const msg = (res.data as any)?.message
+      const msg = (res.data as ApiResponse)?.message
       toast.success(msg || (postStatus === 'draft' ? 'Saved as draft' : 'Post published! 🎉'))
       navigate('/feed')
     } catch (err: unknown) {
@@ -310,6 +331,8 @@ export default function WritePostPage() {
               value={tagInput}
               onChange={e => setTagInput(e.target.value)}
               onKeyDown={handleTagKeyDown}
+              onKeyUp={handleTagKeyUp}
+              onBlur={handleTagBlur}
               placeholder={tags.length === 0 ? 'Add tags (press Enter or Space)…' : 'Add more…'}
               style={{
                 flex: 1, minWidth: 120, border: 'none', outline: 'none', background: 'transparent',

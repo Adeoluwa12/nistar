@@ -477,6 +477,7 @@ export default function AppLayout() {
       </main>
 
       {/* ── Site Footer ───────────────────────────────────────────────────────── */}
+      {isLanding && (
       <footer className="site-footer">
         <div className="site-footer__inner">
           <div className="site-footer__brand">
@@ -534,6 +535,7 @@ export default function AppLayout() {
           <span>You are not alone.</span>
         </div>
       </footer>
+      )}
 
       {/* ── Mobile Bottom Nav (Visible on screens < 768px) ────────────────────── */}
       {isAuthenticated && (
