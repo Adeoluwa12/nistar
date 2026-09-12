@@ -112,8 +112,9 @@ export default function WritePostPage() {
       fd.append('visibility', visibility)
       if (coverFile) fd.append('image', coverFile)
 
-      await postsApi.create(fd)
-      toast.success(postStatus === 'draft' ? 'Saved as draft' : 'Post published! 🎉')
+      const res = await postsApi.create(fd)
+      const msg = (res.data as any)?.message
+      toast.success(msg || (postStatus === 'draft' ? 'Saved as draft' : 'Post published! 🎉'))
       navigate('/feed')
     } catch (err: unknown) {
       toast.error(getErrorMessage(err, 'Failed to publish'))
