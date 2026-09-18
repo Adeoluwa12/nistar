@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import BirthdayBanner from '../../components/shared/BirthdayBanner'
 
 function FeatureCard({ imageSrc, title, description }: { imageSrc: string; title: string; description: string }) {
   return (
@@ -162,7 +161,7 @@ const FAQS = [
   {
     id: 'moderation',
     q: 'How is the community moderated?',
-    a: 'Nista is built to be a supportive, respectful space. Community content is reviewed according to Nistar\u2019s community guidelines, with harmful, abusive, or unsafe content handled according to those rules.',
+    a: 'Nistar is built to be a supportive, respectful space. Community content is reviewed according to Nistar\u2019s community guidelines, with harmful, abusive, or unsafe content handled according to those rules.',
   },
   {
     id: 'replacement',
@@ -183,9 +182,6 @@ export default function LandingPage() {
 
   return (
     <>
-      {/* ── Temporary Birthday Banner — remove after 13 Sep 2026 ── */}
-      <BirthdayBanner />
-
       {/* Hero */}
       <section className="landing-hero">
         <div className="blob blob--top-right" aria-hidden="true" />
