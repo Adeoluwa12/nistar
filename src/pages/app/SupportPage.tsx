@@ -62,14 +62,14 @@ export default function SupportPage() {
   }
 
   return (
-    <div style={{ maxWidth: 600, margin: '0 auto', paddingBottom: 48 }}>
+    <div style={{ paddingBottom: 48 }}>
       <PageHeader
         eyebrow="We're listening"
         title={<>Help & <em>support</em></>}
         subtitle="Something wrong with a session or a counselor, or is something broken? Tell us — we review every report."
       />
 
-      <div style={{ padding: '16px 16px 0', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 10 }}>
+      <div style={{ padding: '16px 16px 0', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 10, maxWidth: 900 }}>
         {[
           { to: '/chat', icon: MessageCircle, label: 'Chat', hint: 'Message your counselor' },
           { to: '/sessions', icon: Calendar, label: 'Sessions', hint: 'Book or manage sessions' },
@@ -96,7 +96,7 @@ export default function SupportPage() {
         ))}
       </div>
 
-      <div style={{ padding: 16 }}>
+      <div style={{ padding: 16, maxWidth: 900 }}>
         <div className="card" style={{ padding: 20 }}>
           <div className="settings-section-header" style={{ marginBottom: 16 }}>
             <LifeBuoy size={15} />

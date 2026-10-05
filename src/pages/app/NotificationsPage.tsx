@@ -64,7 +64,7 @@ export default function NotificationsPage() {
   }
 
   return (
-    <div style={{ maxWidth: 600, margin: '0 auto' }}>
+    <div>
       {/* Header */}
       <PageHeader
         eyebrow="Stay in the loop"

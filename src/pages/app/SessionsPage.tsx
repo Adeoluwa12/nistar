@@ -118,7 +118,7 @@ export default function SessionsPage() {
   const isCounselor = user?.role === 'counselor'
 
   return (
-    <div style={{ maxWidth: 600, margin: '0 auto' }}>
+    <div>
       <PageHeader
         eyebrow="Counseling"
         title={isUser ? <>Your <em>sessions</em></> : <>Client <em>sessions</em></>}
@@ -215,7 +215,7 @@ export default function SessionsPage() {
 
       {isLoading && <Spinner center />}
 
-      <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 12, maxWidth: 900 }}>
         {!isLoading && sessions.length === 0 && (
           <div className="empty-state">
             <div className="empty-state__icon" aria-hidden="true" />
