@@ -12,7 +12,9 @@ function AuthShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="auth-shell">
       <div className="auth-topbar">
-        <span className="auth-logo">Nis<span>tar</span></span>
+        <span className="auth-logo">
+          <img src="/assets/nistar_logo.png" alt="Nistar" />
+        </span>
         <span style={{ fontSize: '0.8125rem', color: 'var(--text-light)' }}>Safe space. Real support.</span>
       </div>
       <div className="auth-body">{children}</div>

@@ -85,7 +85,7 @@ export default function AppLayout() {
       {/* ── Desktop Header (Landing page only) ─────────────────────────────── */}
       <header className="desktop-header" aria-label="Site header">
         <NavLink to="/" className="desktop-header__logo">
-          Nis<span>tar</span>
+          <img src="/assets/nistar_logo.png" alt="Nistar" />
         </NavLink>
         <nav className="desktop-header__nav" aria-label="Primary">
           <NavLink to="/feed" className="desktop-header__link">Feed</NavLink>
@@ -136,8 +136,14 @@ export default function AppLayout() {
         <aside className="desktop-sidebar" aria-label="Desktop navigation">
           <div className="desktop-sidebar__header">
             <NavLink to="/" className="desktop-sidebar__logo" title="Home">
-              <span className="desktop-sidebar__logo-mark">N</span>
-              <span className="desktop-sidebar__logo-text">Nis<span>tar</span></span>
+              <span className="desktop-sidebar__logo-mark">
+                <img src="/assets/nistar_logo.png" alt="" />
+              </span>
+              <img
+                src="/assets/nistar_logo.png"
+                alt="Nistar"
+                className="desktop-sidebar__logo-text"
+              />
             </NavLink>
             <button
               type="button"
@@ -164,10 +170,10 @@ export default function AppLayout() {
             <NavLink
               to="/counselors"
               className={({ isActive }) => `desktop-sidebar__item${isActive ? ' active' : ''}`}
-              title={isCounselor ? 'My Users' : 'Support'}
+              title={isCounselor ? 'My Users' : 'Counselors'}
             >
               <Users size={20} strokeWidth={1.8} />
-              <span className="desktop-sidebar__label">{isCounselor ? 'My Users' : 'Support'}</span>
+              <span className="desktop-sidebar__label">{isCounselor ? 'My Users' : 'Counselors'}</span>
             </NavLink>
 
             <NavLink
@@ -191,10 +197,10 @@ export default function AppLayout() {
             <NavLink
               to="/support"
               className={({ isActive }) => `desktop-sidebar__item${isActive ? ' active' : ''}`}
-              title="Support"
+              title="Help & Support"
             >
               <LifeBuoy size={20} strokeWidth={1.8} />
-              <span className="desktop-sidebar__label">Support</span>
+              <span className="desktop-sidebar__label">Help & Support</span>
             </NavLink>
 
             {isAuthenticated && (
@@ -302,7 +308,7 @@ export default function AppLayout() {
       {/* ── Mobile Top Nav (Visible on screens < 768px) ───────────────────────── */}
       <nav className="topnav">
         <NavLink to="/" className="topnav__logo">
-          Nis<span>tar</span>
+          <img src="/assets/nistar_logo.png" alt="Nistar" />
         </NavLink>
         <div className="topnav__actions">
           {isAuthenticated && (
@@ -362,7 +368,7 @@ export default function AppLayout() {
       >
         <div className="drawer__header">
           <NavLink to="/" className="drawer__logo" onClick={closeDrawer}>
-            Nis<span>tar</span>
+            <img src="/assets/nistar_logo.png" alt="Nistar" />
           </NavLink>
           <button
             type="button"
@@ -411,7 +417,7 @@ export default function AppLayout() {
           )}
           <NavLink to="/support" className="drawer__item" onClick={closeDrawer}>
             <LifeBuoy size={20} strokeWidth={1.8} />
-            <span>Support</span>
+            <span>Help & Support</span>
           </NavLink>
           {isAuthenticated && (
             <NavLink to="/notifications" className="drawer__item" onClick={closeDrawer}>
@@ -495,7 +501,7 @@ export default function AppLayout() {
         <div className="site-footer__inner">
           <div className="site-footer__brand">
             <div className="site-footer__logo">
-              Nis<span>tar</span>
+              <img src="/assets/nistar_logo.png" alt="Nistar" />
             </div>
             <p className="site-footer__tagline">
               A safe community for your mental health. Share stories, find support,
@@ -567,7 +573,7 @@ export default function AppLayout() {
             className={({ isActive }) => `bottom-nav__item${isActive ? ' active' : ''}`}
           >
             <Users size={22} strokeWidth={1.8} />
-            <span>{isCounselor ? 'My Users' : 'Support'}</span>
+            <span>{isCounselor ? 'My Users' : 'Counselors'}</span>
           </NavLink>
 
           <NavLink
