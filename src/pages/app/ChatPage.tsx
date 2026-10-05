@@ -1,9 +1,9 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Send, ArrowLeft, Phone, Video } from 'lucide-react'
 import { formatDistanceToNow, format, isToday } from 'date-fns'
 import { chatApi, getMediaUrl } from '../../api'
-import { getSocket, disconnectSocket } from '../../lib/socket'
+import { getSocket } from '../../lib/socket'
 import { useAuthStore } from '../../stores/authStore'
 import Avatar from '../../components/shared/Avatar'
 import Spinner from '../../components/shared/Spinner'
@@ -21,6 +21,7 @@ export default function ChatPage() {
   const [sending, setSending] = useState(false)
   const [isMobile, setIsMobile] = useState(() => window.matchMedia('(max-width: 767px)').matches)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const [msgsSyncKey, setMsgsSyncKey] = useState<string | null>(null)
   const typingTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [showList, setShowList] = useState(true)
 
@@ -35,16 +36,34 @@ export default function ChatPage() {
   const { data: convData, isLoading } = useQuery({
     queryKey: ['conversations'],
     queryFn: () => chatApi.getConversations(),
+    refetchInterval: 10000,
   })
   const conversations: Conversation[] = convData?.data?.data ?? []
 
-  // Load messages for active conversation
-  const loadMessages = useCallback(async (convId: string) => {
-    try {
-      const { data } = await chatApi.getMessages(convId, { limit: '50' })
-      setMessages(data.data ?? [])
-    } catch { /* silent */ }
-  }, [])
+  // Messages for the active conversation — polled so chat works even when no
+  // realtime socket server is available (e.g. serverless deployments).
+  const { data: msgsData, dataUpdatedAt: msgsUpdatedAt } = useQuery({
+    queryKey: ['messages', activeConv?._id],
+    queryFn: () => chatApi.getMessages(activeConv!._id, { limit: '50' }),
+    enabled: !!activeConv,
+    refetchInterval: 5000,
+  })
+
+  // Sync fetched messages into local state during render — the socket handler
+  // also appends live messages, deduped by _id.
+  const fetchedMsgsKey = msgsData?.data?.data ? `${activeConv?._id}:${msgsUpdatedAt}` : null
+  if (fetchedMsgsKey && fetchedMsgsKey !== msgsSyncKey) {
+    setMsgsSyncKey(fetchedMsgsKey)
+    setMessages(msgsData!.data.data)
+  }
+
+  // Scroll to the latest message after a fresh fetch lands
+  useEffect(() => {
+    if (msgsSyncKey) {
+      const t = setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'auto' }), 50)
+      return () => clearTimeout(t)
+    }
+  }, [msgsSyncKey])
 
   // Socket setup
   useEffect(() => {
@@ -72,9 +91,8 @@ export default function ChatPage() {
       s.off('message:new')
       s.off('typing:start')
       s.off('typing:stop')
-      // Tear down the connection so a stale, previously-authenticated socket
-      // is never reused after logout or a token change.
-      disconnectSocket()
+      // Note: the socket is a shared app-wide singleton — it's torn down on
+      // logout (AppLayout), not when navigating away from this page.
     }
   }, [token, user?._id, qc])
 
@@ -82,7 +100,6 @@ export default function ChatPage() {
     setActiveConv(conv)
     setShowList(false)
     setMessages([])
-    await loadMessages(conv._id)
 
     if (token) {
       const s = getSocket(token)
@@ -90,6 +107,7 @@ export default function ChatPage() {
       s.emit('messages:read', { conversationId: conv._id })
     }
 
+    qc.invalidateQueries({ queryKey: ['messages', conv._id] })
     setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'auto' }), 100)
     qc.invalidateQueries({ queryKey: ['conversations'] })
   }
@@ -116,8 +134,13 @@ export default function ChatPage() {
     setInput('')
 
     try {
-      await chatApi.sendMessage(activeConv._id, { content: text })
-      // Socket will receive the new message
+      const res = await chatApi.sendMessage(activeConv._id, { content: text })
+      const saved: Message | undefined = res.data?.data
+      if (saved) {
+        setMessages(prev => prev.find(m => m._id === saved._id) ? prev : [...prev, saved])
+        qc.invalidateQueries({ queryKey: ['conversations'] })
+        setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50)
+      }
     } catch {
       setInput(text)
       toast.error('Failed to send message')

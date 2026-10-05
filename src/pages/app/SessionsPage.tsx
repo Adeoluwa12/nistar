@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Calendar, Clock, Star, X } from 'lucide-react'
+import { Calendar, Clock, Star, X, Video, CheckCircle } from 'lucide-react'
 import { format, isPast } from 'date-fns'
 import { sessionsApi, getMediaUrl } from '../../api'
 import { useAuthStore } from '../../stores/authStore'
@@ -25,6 +25,8 @@ export default function SessionsPage() {
   const [ratingSession, setRatingSession] = useState<Session | null>(null)
   const [rating, setRating] = useState(0)
   const [feedback, setFeedback] = useState('')
+  const [meetingSession, setMeetingSession] = useState<Session | null>(null)
+  const [meetingLink, setMeetingLink] = useState('')
 
   const { data, isLoading } = useQuery({
     queryKey: ['sessions', filter],
@@ -39,6 +41,35 @@ export default function SessionsPage() {
       qc.invalidateQueries({ queryKey: ['sessions'] })
     },
     onError: () => toast.error('Failed to cancel'),
+  })
+
+  const acceptMut = useMutation({
+    mutationFn: (id: string) => sessionsApi.accept(id),
+    onSuccess: () => {
+      toast.success('Session accepted')
+      qc.invalidateQueries({ queryKey: ['sessions'] })
+    },
+    onError: () => toast.error('Failed to accept session'),
+  })
+
+  const meetingMut = useMutation({
+    mutationFn: ({ id, link }: { id: string; link: string }) => sessionsApi.setMeeting(id, link),
+    onSuccess: () => {
+      toast.success('Meeting link saved')
+      qc.invalidateQueries({ queryKey: ['sessions'] })
+      setMeetingSession(null)
+      setMeetingLink('')
+    },
+    onError: () => toast.error('Failed to save meeting link'),
+  })
+
+  const completeMut = useMutation({
+    mutationFn: (id: string) => sessionsApi.complete(id),
+    onSuccess: () => {
+      toast.success('Session marked complete')
+      qc.invalidateQueries({ queryKey: ['sessions'] })
+    },
+    onError: () => toast.error('Failed to complete session'),
   })
 
   const rateMut = useMutation({
@@ -83,6 +114,7 @@ export default function SessionsPage() {
   })
 
   const isUser = user?.role === 'user'
+  const isCounselor = user?.role === 'counselor'
 
   return (
     <div style={{ maxWidth: 600, margin: '0 auto' }}>
@@ -200,6 +232,9 @@ export default function SessionsPage() {
           const past = isPast(new Date(date))
           const canCancel = ['pending', 'approved', 'scheduled', 'active'].includes(session.status) && !past
           const canRate = isUser && session.status === 'completed' && !session.rating
+          const canAccept = isCounselor && session.status === 'approved'
+          const canAddMeeting = isCounselor && ['approved', 'scheduled', 'active'].includes(session.status)
+          const canComplete = isCounselor && ['approved', 'scheduled', 'active'].includes(session.status)
 
           return (
             <div key={session._id} className="card" style={{ padding: 20 }}>
@@ -253,13 +288,54 @@ export default function SessionsPage() {
                 </div>
               )}
 
+              {session.meetingLink && (
+                <a
+                  href={session.meetingLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn btn--secondary btn--sm"
+                  style={{ display: 'inline-flex', gap: 6, marginBottom: 14, textDecoration: 'none' }}
+                >
+                  <Video size={14} /> Join meeting
+                </a>
+              )}
+
               {session.cancelReason && (
                 <div className="alert alert--error" style={{ marginBottom: 10, fontSize: '0.8125rem' }}>
                   Cancellation reason: {session.cancelReason}
                 </div>
               )}
 
-              <div style={{ display: 'flex', gap: 8 }}>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                {canAccept && (
+                  <button
+                    className="btn btn--primary btn--sm"
+                    onClick={() => acceptMut.mutate(session._id)}
+                    disabled={acceptMut.isPending}
+                    style={{ gap: 6 }}
+                  >
+                    <CheckCircle size={14} /> Accept
+                  </button>
+                )}
+                {canAddMeeting && (
+                  <button
+                    className="btn btn--secondary btn--sm"
+                    onClick={() => { setMeetingSession(session); setMeetingLink(session.meetingLink ?? '') }}
+                    style={{ gap: 6 }}
+                  >
+                    <Video size={14} /> {session.meetingLink ? 'Update link' : 'Add meeting link'}
+                  </button>
+                )}
+                {canComplete && (
+                  <button
+                    className="btn btn--secondary btn--sm"
+                    onClick={() => completeMut.mutate(session._id)}
+                    disabled={completeMut.isPending}
+                    style={{ gap: 6 }}
+                  >
+                    <CheckCircle size={14} /> Mark complete
+                  </button>
+                )}
                 {canCancel && (
                   <button
                     className="btn btn--secondary btn--sm"
@@ -286,6 +362,40 @@ export default function SessionsPage() {
           )
         })}
       </div>
+
+      {/* Meeting Link Modal */}
+      {meetingSession && (
+        <div className="modal-overlay" onClick={() => setMeetingSession(null)}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <div className="modal__handle" />
+            <h3 className="modal__title">Meeting link</h3>
+            <p className="modal__subtitle">Paste a Google Meet (or similar) link for this session.</p>
+
+            <div className="form-group" style={{ marginBottom: 20 }}>
+              <label className="form-label">Meeting URL</label>
+              <input
+                className="form-input"
+                type="url"
+                placeholder="https://meet.google.com/…"
+                value={meetingLink}
+                onChange={e => setMeetingLink(e.target.value)}
+              />
+            </div>
+
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button className="btn btn--secondary" style={{ flex: 1 }} onClick={() => setMeetingSession(null)}>Cancel</button>
+              <button
+                className="btn btn--primary"
+                style={{ flex: 1 }}
+                disabled={!/^https?:\/\/.+/.test(meetingLink.trim()) || meetingMut.isPending}
+                onClick={() => meetingMut.mutate({ id: meetingSession._id, link: meetingLink.trim() })}
+              >
+                {meetingMut.isPending ? 'Saving…' : 'Save link'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Rating Modal */}
       {ratingSession && (
