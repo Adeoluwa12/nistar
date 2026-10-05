@@ -7,6 +7,7 @@ import { getSocket } from '../../lib/socket'
 import { useAuthStore } from '../../stores/authStore'
 import Avatar from '../../components/shared/Avatar'
 import Spinner from '../../components/shared/Spinner'
+import PageHeader from '../../components/shared/PageHeader'
 import toast from 'react-hot-toast'
 import type { Conversation, Message } from '../../types'
 
@@ -163,19 +164,32 @@ export default function ChatPage() {
     return isToday(d) ? format(d, 'HH:mm') : format(d, 'MMM d, HH:mm')
   }
 
+  const header = (
+    <PageHeader
+      eyebrow="Messaging"
+      title={<>Your <em>conversations</em></>}
+      subtitle="Private chats with your counselors — pick up right where a session left off."
+    />
+  )
+
   if (isLoading) return <Spinner center />
 
   if (conversations.length === 0) {
     return (
-      <div className="empty-state">
-        <div className="empty-state__icon" aria-hidden="true" />
-        <p className="empty-state__title">No conversations yet</p>
-        <p className="empty-state__text">Connect with a counselor to start chatting.</p>
+      <div className="chat-page">
+        {header}
+        <div className="empty-state">
+          <div className="empty-state__icon" aria-hidden="true" />
+          <p className="empty-state__title">No conversations yet</p>
+          <p className="empty-state__text">Connect with a counselor to start chatting.</p>
+        </div>
       </div>
     )
   }
 
   return (
+    <div className="chat-page">
+      {header}
     <div className="chat-layout">
       {/* Conversation list */}
       <div className={`chat-sidebar ${!showList ? 'hide-mobile' : ''}`} style={{ display: showList ? 'flex' : 'none' }}>
@@ -298,6 +312,7 @@ export default function ChatPage() {
           </div>
         </div>
       )}
+    </div>
     </div>
   )
 }

@@ -3,6 +3,7 @@ import { Bell, Star, Check, Heart, MessageCircle, UserCheck, Calendar, AlertCirc
 import { formatDistanceToNow } from 'date-fns'
 import { userApi } from '../../api'
 import Spinner from '../../components/shared/Spinner'
+import PageHeader from '../../components/shared/PageHeader'
 import type { Notification } from '../../types'
 import { useNavigate } from 'react-router-dom'
 
@@ -65,22 +66,24 @@ export default function NotificationsPage() {
   return (
     <div style={{ maxWidth: 600, margin: '0 auto' }}>
       {/* Header */}
-      <div style={{ padding: '20px 16px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--border-light)' }}>
-        <div>
-          <h2 style={{ fontSize: '1.375rem' }}>Notifications</h2>
-          {unread > 0 && <p style={{ fontSize: '0.875rem', color: 'var(--text-light)', marginTop: 2 }}>{unread} unread</p>}
-        </div>
+      <PageHeader
+        eyebrow="Stay in the loop"
+        title={<>Your <em>notifications</em></>}
+        subtitle={unread > 0
+          ? `You have ${unread} unread update${unread === 1 ? '' : 's'} — replies, session changes and more.`
+          : 'Replies, session updates, and everything worth knowing — all in one place.'}
+      >
         {unread > 0 && (
           <button
             className="btn btn--ghost btn--sm"
             onClick={() => markAllMut.mutate()}
             disabled={markAllMut.isPending}
-            style={{ gap: 6, color: 'var(--sage-dark)' }}
+            style={{ gap: 6, color: 'var(--sage-dark)', background: 'var(--white)' }}
           >
             <Check size={14} /> Mark all read
           </button>
         )}
-      </div>
+      </PageHeader>
 
       {isLoading && <Spinner center />}
 

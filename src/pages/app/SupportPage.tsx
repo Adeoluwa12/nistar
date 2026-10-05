@@ -1,10 +1,12 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { LifeBuoy, Send } from 'lucide-react'
+import { LifeBuoy, Send, MessageCircle, Calendar, Users } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { complaintsApi } from '../../api'
 import { getErrorMessage } from '../../lib/errors'
 import { useAuthStore } from '../../stores/authStore'
+import PageHeader from '../../components/shared/PageHeader'
 import toast from 'react-hot-toast'
 import type { Complaint } from '../../types'
 
@@ -61,11 +63,37 @@ export default function SupportPage() {
 
   return (
     <div style={{ maxWidth: 600, margin: '0 auto', paddingBottom: 48 }}>
-      <div style={{ padding: '20px 16px 12px' }}>
-        <h2 style={{ marginBottom: 4 }}>Contact support</h2>
-        <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-          Report an issue with a session, a counselor, content, or anything else — we take every complaint seriously.
-        </p>
+      <PageHeader
+        eyebrow="We're listening"
+        title={<>Help & <em>support</em></>}
+        subtitle="Something wrong with a session or a counselor, or is something broken? Tell us — we review every report."
+      />
+
+      <div style={{ padding: '16px 16px 0', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 10 }}>
+        {[
+          { to: '/chat', icon: MessageCircle, label: 'Chat', hint: 'Message your counselor' },
+          { to: '/sessions', icon: Calendar, label: 'Sessions', hint: 'Book or manage sessions' },
+          { to: '/counselors', icon: Users, label: 'Counselors', hint: 'Find a counselor' },
+        ].map(({ to, icon: Icon, label, hint }) => (
+          <Link
+            key={to}
+            to={to}
+            className="card"
+            style={{ padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12, textDecoration: 'none' }}
+          >
+            <div style={{
+              width: 36, height: 36, borderRadius: 'var(--radius-md)', flexShrink: 0,
+              background: 'var(--beige)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: 'var(--sage-dark)',
+            }}>
+              <Icon size={17} />
+            </div>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)' }}>{label}</div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-light)' }}>{hint}</div>
+            </div>
+          </Link>
+        ))}
       </div>
 
       <div style={{ padding: 16 }}>

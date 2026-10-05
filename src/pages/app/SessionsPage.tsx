@@ -6,6 +6,7 @@ import { sessionsApi, getMediaUrl } from '../../api'
 import { useAuthStore } from '../../stores/authStore'
 import Avatar from '../../components/shared/Avatar'
 import Spinner from '../../components/shared/Spinner'
+import PageHeader from '../../components/shared/PageHeader'
 import toast from 'react-hot-toast'
 import type { Session } from '../../types'
 
@@ -118,24 +119,25 @@ export default function SessionsPage() {
 
   return (
     <div style={{ maxWidth: 600, margin: '0 auto' }}>
-      <div style={{ padding: '20px 16px 12px' }}>
-        <h2 style={{ marginBottom: 4 }}>Sessions</h2>
-        <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-          {isUser ? 'Your counseling sessions' : 'Sessions with your clients'}
-        </p>
-      </div>
-
-      {/* Request + Filter */}
-      <div style={{ padding: '0 16px 12px' }}>
+      <PageHeader
+        eyebrow="Counseling"
+        title={isUser ? <>Your <em>sessions</em></> : <>Client <em>sessions</em></>}
+        subtitle={isUser
+          ? 'Book time with a counselor, join upcoming appointments, and look back on past sessions.'
+          : 'Accept assignments, share meeting links, and keep track of the people supporting you.'}
+      >
         {isUser && (
           <button
             className="btn btn--primary btn--sm"
             onClick={() => setShowRequest(s => !s)}
-            style={{ marginBottom: 12, width: '100%' }}
           >
             {showRequest ? 'Close' : 'Request appointment'}
           </button>
         )}
+      </PageHeader>
+
+      {/* Request + Filter */}
+      <div style={{ padding: '16px 16px 12px' }}>
 
         {showRequest && (
           <div className="card" style={{ padding: 16, marginBottom: 12 }}>
