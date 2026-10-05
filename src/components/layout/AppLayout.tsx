@@ -3,7 +3,7 @@ import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import {
   Home, Users, MessageCircle, User, Bell, PenSquare,
   LayoutDashboard, Calendar, LogIn, UserPlus, Menu, X,
-  ShieldCheck, Heart, PanelLeftClose, PanelLeftOpen, LogOut,
+  ShieldCheck, Heart, PanelLeftClose, PanelLeftOpen, LogOut, LifeBuoy,
 } from 'lucide-react'
 import { useAuthStore } from '../../stores/authStore'
 import Avatar from '../shared/Avatar'
@@ -186,6 +186,15 @@ export default function AppLayout() {
             >
               <Calendar size={20} strokeWidth={1.8} />
               <span className="desktop-sidebar__label">Sessions</span>
+            </NavLink>
+
+            <NavLink
+              to="/support"
+              className={({ isActive }) => `desktop-sidebar__item${isActive ? ' active' : ''}`}
+              title="Support"
+            >
+              <LifeBuoy size={20} strokeWidth={1.8} />
+              <span className="desktop-sidebar__label">Support</span>
             </NavLink>
 
             {isAuthenticated && (
@@ -400,6 +409,10 @@ export default function AppLayout() {
               <span>Sessions</span>
             </NavLink>
           )}
+          <NavLink to="/support" className="drawer__item" onClick={closeDrawer}>
+            <LifeBuoy size={20} strokeWidth={1.8} />
+            <span>Support</span>
+          </NavLink>
           {isAuthenticated && (
             <NavLink to="/notifications" className="drawer__item" onClick={closeDrawer}>
               <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
@@ -522,7 +535,8 @@ export default function AppLayout() {
 
           <div className="site-footer__col">
             <h5>Support</h5>
-            <a href="mailto:hello@nistar.app">Contact us</a>
+            <NavLink to="/support">Contact us / complaints</NavLink>
+            <a href="mailto:hello@nistar.app">Email us</a>
             <a href="#">Community guidelines</a>
             <a href="#">Privacy</a>
             <a href="#">Terms</a>

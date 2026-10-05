@@ -27,6 +27,7 @@ import ChatPage from './pages/app/ChatPage'
 import ProfilePage from './pages/app/ProfilePage'
 import NotificationsPage from './pages/app/NotificationsPage'
 import SessionsPage from './pages/app/SessionsPage'
+import SupportPage from './pages/app/SupportPage'
 import ChangePasswordPage from './pages/app/ChangePasswordPage'
 
 // Admin
@@ -104,9 +105,13 @@ export default function App() {
               <Route path="/feed" element={<FeedPage />} />
               <Route path="/posts/:slug" element={<PostPage />} />
               <Route path="/counselors" element={<CounselorsPage />} />
+              <Route path="/support" element={<SupportPage />} />
 
               {/* Protected routes */}
               <Route path="/posts/new" element={
+                <ProtectedRoute><WritePostPage /></ProtectedRoute>
+              } />
+              <Route path="/posts/:slug/edit" element={
                 <ProtectedRoute><WritePostPage /></ProtectedRoute>
               } />
               <Route path="/chat" element={

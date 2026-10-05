@@ -1,6 +1,15 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 
+// Nigerian crisis & helpline resources. Verify numbers periodically.
+const CRISIS_LINES = [
+  { label: 'National emergency', detail: 'Police, ambulance, fire', tel: '112' },
+  { label: 'Lagos emergency', detail: 'Lagos State emergency line', tel: '767' },
+  { label: 'SURPIN', detail: 'Suicide prevention, Lagos (24/7)', tel: '09080217555' },
+  { label: 'SURPIN', detail: 'Suicide prevention, Lagos (alt)', tel: '09034400009' },
+  { label: 'MANI', detail: 'Mentally Aware Nigeria helpline', tel: '08091116264' },
+]
+
 function FeatureCard({ imageSrc, title, description }: { imageSrc: string; title: string; description: string }) {
   return (
     <div className="landing-feature">
@@ -448,15 +457,21 @@ export default function LandingPage() {
           <p className="landing-crisis__text">
             Nistar is not an emergency service. If you or someone you know is in immediate danger, contact an appropriate emergency or crisis service.
           </p>
-          <div className="landing-crisis__actions">
-            <a
-              href="https://www.befrienders.org/"
-              target="_blank"
-              rel="noreferrer"
-              className="btn btn--primary btn--lg"
-            >
-              Find a helpline
-            </a>
+          <div className="landing-crisis__actions" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 10 }}>
+            {CRISIS_LINES.map((line, i) => (
+              <a
+                key={i}
+                href={`tel:${line.tel}`}
+                className="btn btn--primary btn--lg"
+                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}
+              >
+                <span>
+                  {line.label}
+                  <span style={{ display: 'block', fontSize: '0.75rem', fontWeight: 400, opacity: 0.85 }}>{line.detail}</span>
+                </span>
+                <strong style={{ fontVariantNumeric: 'tabular-nums' }}>{line.tel}</strong>
+              </a>
+            ))}
             <Link to="/feed" className="btn btn--secondary btn--lg">
               Browse community stories
             </Link>
@@ -500,14 +515,17 @@ export default function LandingPage() {
                 service or an appropriate crisis resource.
               </p>
             </div>
-            <a
-              className="landing-faq__urgent-cta"
-              href="https://www.befrienders.org/"
-              target="_blank"
-              rel="noreferrer"
-            >
-              Find crisis resources →
-            </a>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {CRISIS_LINES.map((line, i) => (
+                <a
+                  key={i}
+                  className="landing-faq__urgent-cta"
+                  href={`tel:${line.tel}`}
+                >
+                  {line.label}: {line.tel}
+                </a>
+              ))}
+            </div>
           </div>
         </div>
       </section>

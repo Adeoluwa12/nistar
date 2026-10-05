@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { format } from 'date-fns'
-import { Users, FileText, MessageCircle, Calendar, Shield, Building2, TrendingUp, CheckCircle, XCircle, Eye, UserCog, Tag, Mail, BarChart3, Plus } from 'lucide-react'
+import { Users, FileText, MessageCircle, Calendar, Shield, ShieldAlert, Building2, TrendingUp, CheckCircle, XCircle, Eye, UserCog, Tag, Mail, BarChart3, Plus } from 'lucide-react'
 import { adminApi, counselorsApi, getMediaUrl } from '../../api'
 import { getErrorMessage } from '../../lib/errors'
 import { useAuthStore } from '../../stores/authStore'
@@ -14,16 +14,18 @@ import AnalyticsPanel from '../../components/admin/AnalyticsPanel'
 import toast from 'react-hot-toast'
 import { useNavigate } from 'react-router-dom'
 
-type AdminTab = 'overview' | 'users' | 'posts' | 'sessions' | 'applications' | 'comments' | 'departments' | 'team' | 'categories' | 'subscribers' | 'analytics'
+type AdminTab = 'overview' | 'users' | 'posts' | 'sessions' | 'applications' | 'comments' | 'departments' | 'team' | 'categories' | 'subscribers' | 'complaints' | 'analytics'
 type AutoPublishedFilter = '' | 'true' | 'false'
 
 interface DashboardData {
   stats?: {
     users?: { total?: number; newThisWeek?: number }
     counselors?: { total?: number }
-    posts?: { total?: number }
+    posts?: { total?: number; pending?: number }
     comments?: { pending?: number }
     sessions?: { total?: number }
+    subscribers?: { total?: number }
+    complaints?: { open?: number }
   }
   recentPosts?: Array<{
     _id: string; title: string; slug: string
@@ -50,6 +52,12 @@ interface CounselorOption { _id: string; name: string }
 
 interface Application {
   _id: string; user?: PersonRef; status: string; statement?: string; documents?: string[]
+}
+
+interface AdminComplaint {
+  _id: string; status: 'open' | 'in_progress' | 'resolved'
+  category: string; subject: string; message: string; resolutionNote?: string
+  user?: PersonRef; name?: string; email?: string
 }
 
 interface PendingComment {
@@ -112,6 +120,12 @@ export default function AdminPage() {
     enabled: tab === 'sessions',
   })
 
+  const { data: complaintsData, isLoading: complaintsLoading } = useQuery({
+    queryKey: ['admin-complaints'],
+    queryFn: () => adminApi.getComplaints({ limit: '30' }),
+    enabled: tab === 'complaints',
+  })
+
   const { data: counselorsData } = useQuery({
     queryKey: ['counselors-list'],
     queryFn: () => counselorsApi.getAll({ limit: '100' }),
@@ -162,6 +176,16 @@ export default function AdminPage() {
     onError: () => toast.error('Failed to assign counselor'),
   })
 
+  const complaintMut = useMutation({
+    mutationFn: ({ id, status, note }: { id: string; status: string; note?: string }) =>
+      adminApi.updateComplaint(id, { status, resolutionNote: note }),
+    onSuccess: () => {
+      toast.success('Complaint updated')
+      qc.invalidateQueries({ queryKey: ['admin-complaints'] })
+    },
+    onError: () => toast.error('Failed to update complaint'),
+  })
+
   const reviewAppMut = useMutation({
     mutationFn: ({ id, status, note }: { id: string; status: 'approved' | 'rejected'; note?: string }) =>
       adminApi.reviewApplication(id, status, note),
@@ -203,6 +227,7 @@ export default function AdminPage() {
   const queueSessions: QueueSession[] = sessionsData?.data?.data ?? []
   const counselorOptions: CounselorOption[] = counselorsData?.data?.data ?? []
   const applications: Application[] = applicationsData?.data?.data ?? []
+  const complaints: AdminComplaint[] = complaintsData?.data?.data ?? []
   const departments: AdminDept[] = deptsData?.data?.data ?? []
 
   const baseTabs: { key: AdminTab; label: string; icon: React.JSX.Element }[] = [
@@ -212,6 +237,7 @@ export default function AdminPage() {
     { key: 'sessions', label: 'Sessions', icon: <Calendar size={15} /> },
     { key: 'applications', label: 'Applications', icon: <FileText size={15} /> },
     { key: 'comments', label: 'Comments', icon: <MessageCircle size={15} /> },
+    { key: 'complaints', label: 'Complaints', icon: <ShieldAlert size={15} /> },
     { key: 'subscribers', label: 'Subscribers', icon: <Mail size={15} /> },
   ]
   const adminTabs: { key: AdminTab; label: string; icon: React.JSX.Element }[] = [
@@ -265,6 +291,9 @@ export default function AdminPage() {
                   { label: 'Published Posts', value: dash?.stats?.posts?.total ?? 0, icon: <FileText size={20} />, color: '#E67E22' },
                   { label: 'Pending Comments', value: dash?.stats?.comments?.pending ?? 0, icon: <MessageCircle size={20} />, color: '#E74C3C' },
                   { label: 'Total Sessions', value: dash?.stats?.sessions?.total ?? 0, icon: <Calendar size={20} />, color: 'var(--beige-rich)' },
+                  { label: 'Posts to Review', value: dash?.stats?.posts?.pending ?? 0, icon: <Eye size={20} />, color: '#8E44AD' },
+                  { label: 'Subscribers', value: dash?.stats?.subscribers?.total ?? 0, icon: <Mail size={20} />, color: '#2E86C1' },
+                  { label: 'Open Complaints', value: dash?.stats?.complaints?.open ?? 0, icon: <ShieldAlert size={20} />, color: '#C0392B' },
                   { label: 'New This Week', value: dash?.stats?.users?.newThisWeek ?? 0, icon: <TrendingUp size={20} />, color: '#27AE60' },
                 ].map(stat => (
                   <div key={stat.label} className="card" style={{ padding: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -580,6 +609,68 @@ export default function AdminPage() {
                 })
               )
             )}
+          </div>
+        )}
+
+        {/* COMPLAINTS */}
+        {tab === 'complaints' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {complaintsLoading ? <Spinner center /> : complaints.length === 0 ? (
+              <div className="empty-state">
+                <div className="empty-state__icon" aria-hidden="true" />
+                <p className="empty-state__title">No complaints</p>
+                <p className="empty-state__text">No support tickets or complaints right now.</p>
+              </div>
+            ) : complaints.map((c) => {
+              const reporter = c.user ?? { name: c.name, email: c.email }
+              return (
+                <div key={c._id} className="card" style={{ padding: 16 }}>
+                  <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', marginBottom: 10 }}>
+                    <Avatar src={getMediaUrl(reporter?.avatar)} name={reporter?.name ?? 'Guest'} size="md" />
+                    <div style={{ flex: 1 }}>
+                      <p style={{ fontWeight: 600, fontSize: '0.9375rem', marginBottom: 2 }}>{c.subject}</p>
+                      <p style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>
+                        {reporter?.name}{reporter?.email ? ` · ${reporter.email}` : ''}
+                      </p>
+                      <p style={{ fontSize: '0.75rem', color: 'var(--text-light)', marginTop: 4 }}>
+                        Category: {c.category} · Status: {c.status}
+                      </p>
+                    </div>
+                  </div>
+                  <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', background: 'var(--beige)', padding: 10, borderRadius: 'var(--radius)', marginBottom: 12, lineHeight: 1.6 }}>
+                    {c.message}
+                  </p>
+                  {!!c.resolutionNote && (
+                    <p style={{ fontSize: '0.8125rem', color: 'var(--sage-dark)', marginBottom: 12 }}>
+                      Resolution: {c.resolutionNote}
+                    </p>
+                  )}
+                  {c.status !== 'resolved' && (
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                      {c.status === 'open' && (
+                        <button
+                          className="btn btn--secondary btn--sm"
+                          onClick={() => complaintMut.mutate({ id: c._id, status: 'in_progress' })}
+                          disabled={complaintMut.isPending}
+                        >
+                          Mark in progress
+                        </button>
+                      )}
+                      <button
+                        className="btn btn--primary btn--sm"
+                        onClick={() => {
+                          const note = prompt('Resolution note (optional):') ?? ''
+                          complaintMut.mutate({ id: c._id, status: 'resolved', note })
+                        }}
+                        disabled={complaintMut.isPending}
+                      >
+                        Resolve
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
           </div>
         )}
 
