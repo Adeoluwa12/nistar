@@ -1,12 +1,15 @@
-import { useState, useRef, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { Image, X, ArrowLeft, Bold, Italic, Heading1, Quote, List, Link as LinkIcon } from 'lucide-react'
-import { postsApi } from '../../api'
+import { useState, useRef, useCallback, useEffect, useMemo } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
+import { Image, X, ArrowLeft, Bold, Italic, Heading1, Quote, List, Link as LinkIcon, History } from 'lucide-react'
+import { postsApi, getMediaUrl } from '../../api'
 import { getErrorMessage } from '../../lib/errors'
-import type { ApiResponse } from '../../types'
+import type { ApiResponse, Post } from '../../types'
+import Spinner from '../../components/shared/Spinner'
 import toast from 'react-hot-toast'
 
 type Tag = { id: string; text: string }
+type TagSuggestion = { tag: string; count: number }
 
 const MARKDOWN_TOOLS = [
   { label: 'Bold', icon: Bold, prefix: '**', suffix: '**', placeholder: 'bold text' },
@@ -17,27 +20,142 @@ const MARKDOWN_TOOLS = [
   { label: 'Link', icon: LinkIcon, prefix: '[', suffix: '](url)', placeholder: 'link text' },
 ] as const
 
+interface DraftSnapshot {
+  title: string
+  content: string
+  excerpt: string
+  category: string
+  tags: string[]
+  isAnonymous: boolean
+  allowComments: boolean
+  visibility: 'public' | 'private'
+  savedAt: number
+}
+
+const draftKey = (scope: string) => `nistar_post_draft_${scope}`
+
 export default function WritePostPage() {
   const navigate = useNavigate()
+  const { slug: editSlug } = useParams<{ slug?: string }>()
   const contentRef = useRef<HTMLTextAreaElement>(null)
   const tagInputRef = useRef<HTMLInputElement>(null)
 
-  const [title, setTitle] = useState('')
-  const [content, setContent] = useState('')
-  const [excerpt, setExcerpt] = useState('')
-  const [category, setCategory] = useState('')
-  const [tags, setTags] = useState<Tag[]>([])
+  // Local draft for this writing session — stable per scope (new vs :slug/edit)
+  const scope = editSlug ?? 'new'
+  const restoredDraft = useMemo<DraftSnapshot | null>(() => {
+    try {
+      const raw = localStorage.getItem(draftKey(scope))
+      const d: DraftSnapshot | null = raw ? JSON.parse(raw) : null
+      return d && (d.title || d.content) ? d : null
+    } catch {
+      return null
+    }
+  }, [scope])
+
+  const [title, setTitle] = useState(restoredDraft?.title ?? '')
+  const [content, setContent] = useState(restoredDraft?.content ?? '')
+  const [excerpt, setExcerpt] = useState(restoredDraft?.excerpt ?? '')
+  const [category, setCategory] = useState(restoredDraft?.category ?? '')
+  const [tags, setTags] = useState<Tag[]>(() =>
+    (restoredDraft?.tags ?? []).map(t => ({ id: crypto.randomUUID(), text: t })))
   const [tagInput, setTagInput] = useState('')
-  const [status] = useState<'draft' | 'published'>('published')
-  const [isAnonymous, setIsAnonymous] = useState(false)
-  const [allowComments, setAllowComments] = useState(true)
-  const [visibility, setVisibility] = useState<'public' | 'private'>('public')
+  const [isAnonymous, setIsAnonymous] = useState(restoredDraft?.isAnonymous ?? false)
+  const [allowComments, setAllowComments] = useState(restoredDraft?.allowComments ?? true)
+  const [visibility, setVisibility] = useState<'public' | 'private'>(restoredDraft?.visibility ?? 'public')
 
   const [coverPreview, setCoverPreview] = useState<string | null>(null)
   const [coverFile, setCoverFile] = useState<File | null>(null)
   const [loading, setLoading] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [draftSavedAt, setDraftSavedAt] = useState<number | null>(restoredDraft?.savedAt ?? null)
+  const [hydratedPostId, setHydratedPostId] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
+
+  // ── Load existing post when editing (/posts/:slug/edit) ──────────────────
+  const { data: editData, isLoading: postLoading, isError: editError } = useQuery({
+    queryKey: ['edit-post', editSlug],
+    queryFn: () => postsApi.getOne(editSlug!),
+    enabled: !!editSlug,
+    retry: false,
+  })
+  const editingPost: Post | null = editData?.data?.data?.post ?? null
+  const loadFailed = !!editSlug && (editError || (!!editData && !editingPost))
+
+  // ── Hydrate from the server post once loaded (draft edits win if present) ──
+  const postSyncKey = editingPost && !restoredDraft ? editingPost._id : null
+  if (postSyncKey && hydratedPostId !== postSyncKey) {
+    setHydratedPostId(postSyncKey)
+    setTitle(editingPost!.title)
+    setContent(editingPost!.content)
+    setExcerpt(editingPost!.excerpt ?? '')
+    setCategory(editingPost!.category ?? '')
+    setTags(editingPost!.tags.map(t => ({ id: crypto.randomUUID(), text: t })))
+    setIsAnonymous(editingPost!.isAnonymous)
+    setAllowComments(editingPost!.allowComments)
+    setVisibility(editingPost!.visibility)
+    if (editingPost!.coverImage) setCoverPreview(getMediaUrl(editingPost!.coverImage) ?? null)
+  }
+
+  // ── Notify once when a local draft was restored ───────────────────────────
+  useEffect(() => {
+    if (restoredDraft) {
+      toast(`Draft restored from ${new Date(restoredDraft.savedAt).toLocaleTimeString()}`, { icon: '📝' })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // ── Autosave to localStorage (debounced) ──────────────────────────────────
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const hasContent = !!(title.trim() || content.trim())
+      if (!hasContent) {
+        // Cleared fields → drop any stale draft so it isn't resurrected later
+        if (draftSavedAt !== null) {
+          try { localStorage.removeItem(draftKey(scope)) } catch { /* ignore */ }
+          setDraftSavedAt(null)
+        }
+        return
+      }
+      const snapshot: DraftSnapshot = {
+        title, content, excerpt, category,
+        tags: tags.map(t => t.text),
+        isAnonymous, allowComments, visibility,
+        savedAt: Date.now(),
+      }
+      try {
+        localStorage.setItem(draftKey(scope), JSON.stringify(snapshot))
+        setDraftSavedAt(snapshot.savedAt)
+      } catch { /* storage full — ignore */ }
+    }, 800)
+    return () => clearTimeout(timer)
+  }, [title, content, excerpt, category, tags, isAnonymous, allowComments, visibility, draftSavedAt, scope])
+
+  const clearDraft = () => {
+    try { localStorage.removeItem(draftKey(scope)) } catch { /* ignore */ }
+    setDraftSavedAt(null)
+  }
+
+  // ── Tag suggestions ───────────────────────────────────────────────────────
+  const { data: tagsData } = useQuery({
+    queryKey: ['tag-suggestions'],
+    queryFn: () => postsApi.getTags(),
+    staleTime: 1000 * 60 * 10,
+  })
+  const suggestions: TagSuggestion[] = tagsData?.data?.data ?? []
+  const tagSet = new Set(tags.map(t => t.text.toLowerCase()))
+  const filteredSuggestions = suggestions
+    .filter(s => !tagSet.has(s.tag.toLowerCase()))
+    .filter(s => !tagInput.trim() || s.tag.toLowerCase().includes(tagInput.trim().toLowerCase()))
+    .slice(0, 8)
+
+  const addTag = (text: string) => {
+    const clean = text.trim().toLowerCase()
+    if (!clean) return
+    if (tagSet.has(clean)) { toast.error('Tag already added'); return }
+    if (tags.length >= 8) { toast.error('Maximum 8 tags allowed'); return }
+    setTags([...tags, { id: crypto.randomUUID(), text: clean }])
+    setTagInput('')
+  }
 
   const validate = () => {
     const e: Record<string, string> = {}
@@ -77,32 +195,11 @@ export default function WritePostPage() {
   const handleTagKeyUp = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault()
-      const text = tagInput.trim()
-      if (!text) return
-      if (tags.some(t => t.text.toLowerCase() === text.toLowerCase())) {
-        toast.error('Tag already added')
-        return
-      }
-      if (tags.length >= 8) {
-        toast.error('Maximum 8 tags allowed')
-        return
-      }
-      setTags([...tags, { id: crypto.randomUUID(), text }])
-      setTagInput('')
+      addTag(tagInput)
     }
   }
 
-  const handleTagBlur = () => {
-    const text = tagInput.trim()
-    if (!text) return
-    if (tags.some(t => t.text.toLowerCase() === text.toLowerCase())) {
-      setTagInput('')
-      return
-    }
-    if (tags.length >= 8) return
-    setTags([...tags, { id: crypto.randomUUID(), text }])
-    setTagInput('')
-  }
+  const handleTagBlur = () => addTag(tagInput)
 
   const handleTagKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
@@ -116,33 +213,64 @@ export default function WritePostPage() {
 
   const removeTag = (id: string) => setTags(tags.filter(t => t.id !== id))
 
-  const handleSubmit = async (e: React.FormEvent, postStatus?: string) => {
+  const buildFormData = (postStatus: string) => {
+    const fd = new FormData()
+    fd.append('title', title)
+    fd.append('content', content)
+    fd.append('excerpt', excerpt || content.slice(0, 150))
+    fd.append('tags', tags.map(t => t.text).join(','))
+    fd.append('category', category)
+    fd.append('status', postStatus)
+    fd.append('isAnonymous', String(isAnonymous))
+    fd.append('allowComments', String(allowComments))
+    fd.append('visibility', visibility)
+    if (coverFile) fd.append('image', coverFile)
+    return fd
+  }
+
+  const handleSubmit = async (e: React.FormEvent, postStatus: 'draft' | 'published') => {
     e.preventDefault()
-    if (!validate()) return
+    if (postStatus === 'draft' && !title.trim() && !content.trim()) {
+      toast.error('Nothing to save yet')
+      return
+    }
+    if (postStatus !== 'draft' && !validate()) return
+    if (postStatus === 'draft' && !title.trim()) {
+      setErrors({ title: 'Give the draft a title so you can find it later' })
+      return
+    }
     setLoading(true)
     try {
-      const fd = new FormData()
-      fd.append('title', title)
-      fd.append('content', content)
-      fd.append('excerpt', excerpt || content.slice(0, 150))
-      fd.append('tags', tags.map(t => t.text).join(','))
-      fd.append('category', category)
-      fd.append('status', postStatus || status)
-      fd.append('isAnonymous', String(isAnonymous))
-      fd.append('allowComments', String(allowComments))
-      fd.append('visibility', visibility)
-      if (coverFile) fd.append('image', coverFile)
-
-      const res = await postsApi.create(fd)
+      const fd = buildFormData(postStatus)
+      const res = editingPost
+        ? await postsApi.update(editingPost._id, fd)
+        : await postsApi.create(fd)
       const msg = (res.data as ApiResponse)?.message
-      toast.success(msg || (postStatus === 'draft' ? 'Saved as draft' : 'Post published! 🎉'))
-      navigate('/feed')
+      clearDraft()
+      toast.success(msg || (postStatus === 'draft' ? 'Draft saved' : editingPost ? 'Post updated' : 'Post published! 🎉'))
+      navigate(postStatus === 'draft' ? '/profile' : '/feed')
     } catch (err: unknown) {
-      toast.error(getErrorMessage(err, 'Failed to publish'))
+      toast.error(getErrorMessage(err, 'Failed to save'))
     } finally {
       setLoading(false)
     }
   }
+
+  if (editSlug && postLoading) return <Spinner center />
+  if (loadFailed) {
+    return (
+      <div className="empty-state">
+        <div className="empty-state__icon" aria-hidden="true" />
+        <p className="empty-state__title">Post not found</p>
+        <button className="btn btn--primary" style={{ marginTop: 16 }} onClick={() => navigate('/feed')}>Back to feed</button>
+      </div>
+    )
+  }
+
+  const isEditing = !!editingPost
+  const publishLabel = editingPost
+    ? (editingPost.status === 'draft' || editingPost.status === 'rejected' ? 'Submit for review' : 'Update')
+    : 'Publish'
 
   return (
     <div style={{ maxWidth: 'var(--content-w)', margin: '0 auto', padding: '16px 16px 48px' }}>
@@ -164,12 +292,19 @@ export default function WritePostPage() {
             onClick={e => handleSubmit(e, 'published')}
             disabled={loading}
           >
-            {loading ? 'Publishing…' : 'Publish'}
+            {loading ? 'Saving…' : publishLabel}
           </button>
         </div>
       </div>
 
-      <h2 style={{ marginBottom: 24 }}>Write a new post</h2>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
+        <h2>{isEditing ? 'Edit post' : 'Write a new post'}</h2>
+        {draftSavedAt && (
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '0.75rem', color: 'var(--text-light)' }}>
+            <History size={12} /> Draft auto-saved {new Date(draftSavedAt).toLocaleTimeString()}
+          </span>
+        )}
+      </div>
 
       <form noValidate style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
         {/* Cover image */}
@@ -228,7 +363,6 @@ export default function WritePostPage() {
             borderRadius: 'var(--radius)',
             overflow: 'hidden',
             transition: 'border-color 0.2s, box-shadow 0.2s',
-            ...(errors.content ? {} : {})
           }}>
             {/* Markdown toolbar */}
             <div style={{
@@ -267,7 +401,7 @@ export default function WritePostPage() {
               rows={14}
               style={{
                 lineHeight: 1.8, fontSize: '1rem', borderRadius: 0, border: 'none',
-                borderTop: errors.content ? 'none' : 'none', resize: 'vertical'
+                resize: 'vertical'
               }}
             />
           </div>
@@ -301,7 +435,6 @@ export default function WritePostPage() {
               background: 'var(--white)', cursor: 'text',
               transition: 'border-color 0.2s, box-shadow 0.2s'
             }}
-            onFocus={() => {}}
           >
             {tags.map(tag => (
               <span
@@ -341,6 +474,22 @@ export default function WritePostPage() {
               }}
             />
           </div>
+          {filteredSuggestions.length > 0 && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
+              <span style={{ fontSize: '0.75rem', color: 'var(--text-light)', alignSelf: 'center' }}>Suggestions:</span>
+              {filteredSuggestions.map(s => (
+                <button
+                  key={s.tag}
+                  type="button"
+                  className="tag tag--beige"
+                  style={{ border: 'none', cursor: 'pointer', fontFamily: 'var(--font)' }}
+                  onClick={() => addTag(s.tag)}
+                >
+                  #{s.tag}
+                </button>
+              ))}
+            </div>
+          )}
           <span className="form-hint">{tags.length}/8 tags</span>
         </div>
 

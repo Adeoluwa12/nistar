@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Heart, MessageCircle, Share2, ArrowLeft, Send, Trash2 } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
+import ReactMarkdown from 'react-markdown'
 import { postsApi, commentsApi, getMediaUrl } from '../../api'
 import { useAuthStore } from '../../stores/authStore'
 import Avatar from '../../components/shared/Avatar'
@@ -105,6 +106,11 @@ export default function PostPage() {
       </div>
 
       <article style={{ padding: '20px 16px 32px' }}>
+        {post.status !== 'published' && (
+          <div className="alert alert--info" style={{ marginBottom: 20 }}>
+            This post is <strong>{post.status}</strong> — only you and admins can see this preview.
+          </div>
+        )}
         {post.tags.length > 0 && (
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 16 }}>
             {post.tags.map((t: string) => <span key={t} className="post-card__tag">#{t}</span>)}
@@ -129,8 +135,8 @@ export default function PostPage() {
           </div>
         )}
 
-        <div style={{ fontSize: '1.0625rem', lineHeight: 1.8, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
-          {post.content}
+        <div className="post-content" style={{ fontSize: '1.0625rem', lineHeight: 1.8, wordBreak: 'break-word' }}>
+          <ReactMarkdown>{post.content}</ReactMarkdown>
         </div>
 
         <div style={{ display: 'flex', gap: 16, marginTop: 32, paddingTop: 24, borderTop: '1px solid var(--border-light)' }}>

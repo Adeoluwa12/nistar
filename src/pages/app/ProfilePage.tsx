@@ -204,7 +204,28 @@ export default function ProfilePage() {
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {myPosts.map(p => <PostCard key={p._id} post={p} />)}
+              {myPosts.map(p => (
+                <div key={p._id}>
+                  {p.status !== 'published' && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                      <span style={{
+                        fontSize: '0.7rem', fontWeight: 700, padding: '2px 10px', borderRadius: 20,
+                        background: p.status === 'rejected' ? 'var(--error-bg)' : 'var(--beige)',
+                        color: p.status === 'rejected' ? 'var(--error)' : 'var(--text-secondary)',
+                        textTransform: 'uppercase', letterSpacing: '0.04em',
+                      }}>{p.status}</span>
+                      <button
+                        className="btn btn--ghost btn--sm"
+                        style={{ fontSize: '0.75rem' }}
+                        onClick={() => navigate(`/posts/${p.slug}/edit`)}
+                      >
+                        {p.status === 'draft' ? 'Continue writing' : 'Edit'}
+                      </button>
+                    </div>
+                  )}
+                  <PostCard post={p} />
+                </div>
+              ))}
             </div>
           )}
         </div>
