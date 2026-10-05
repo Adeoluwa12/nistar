@@ -163,6 +163,22 @@ export interface Subscriber {
   createdAt: string;
 }
 
+export type ComplaintStatus = 'open' | 'in_progress' | 'resolved';
+export type ComplaintCategory = 'session' | 'counselor' | 'content' | 'technical' | 'other';
+
+export interface Complaint {
+  _id: string;
+  user?: { _id: string; name: string; email: string; avatar?: string };
+  name?: string;
+  email?: string;
+  category: ComplaintCategory;
+  subject: string;
+  message: string;
+  status: ComplaintStatus;
+  resolutionNote?: string;
+  createdAt: string;
+}
+
 export interface AuthorStats {
   totalPosts: number;
   published: number;

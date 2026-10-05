@@ -116,6 +116,7 @@ export const authApi = {
 
 export const postsApi = {
   getAll: (params?: Record<string, string>) => api.get('/posts', { params }),
+  getTags: () => api.get('/posts/tags'),
   getOne: (slug: string) => api.get(`/posts/${slug}`),
   create: (data: FormData) => api.post('/posts', data),
   update: (id: string, data: FormData | Record<string, unknown>) => api.put(`/posts/${id}`, data),
@@ -145,6 +146,7 @@ export const sessionsApi = {
   schedule: (data: { counselorId: string; scheduledAt: string; duration?: number; notes?: string }) => api.post('/sessions', data),
   requestAppointment: (data: { requestedDate: string; description?: string; emotionalState?: string; preferredSupportType?: 'call' | 'chat' | 'follow-up'; availability?: string; duration?: number }) => api.post('/sessions', data),
   cancel: (id: string, reason?: string) => api.put(`/sessions/${id}/cancel`, { reason }),
+  accept: (id: string) => api.put(`/sessions/${id}/accept`),
   rate: (id: string, data: { rating: number; feedback?: string }) => api.put(`/sessions/${id}/rate`, data),
   setMeeting: (id: string, meetingLink: string) => api.put(`/sessions/${id}/meeting`, { meetingLink }),
   complete: (id: string) => api.put(`/sessions/${id}/complete`),
@@ -179,6 +181,12 @@ export const subscribeApi = {
   subscribe: (email: string) => api.post('/subscribe', { email }),
 }
 
+export const complaintsApi = {
+  submit: (data: { subject: string; message: string; category?: string; name?: string; email?: string }) =>
+    api.post('/complaints', data),
+  getMy: () => api.get('/complaints/my'),
+}
+
 export const adminApi = {
   getDashboard: () => api.get('/admin/dashboard'),
   getUsers: (params?: Record<string, string>) => api.get('/admin/users', { params }),
@@ -208,6 +216,8 @@ export const adminApi = {
   deleteLibraryWork: (id: string) => api.delete(`/admin/library/${id}`),
   // Mailing list + compliance + analytics
   getSubscribers: (params?: Record<string, string>) => api.get('/admin/subscribers', { params }),
+  getComplaints: (params?: Record<string, string>) => api.get('/admin/complaints', { params }),
+  updateComplaint: (id: string, data: { status?: string; resolutionNote?: string }) => api.put(`/admin/complaints/${id}`, data),
   getAnalytics: () => api.get('/admin/analytics'),
   getConversationsMeta: (params?: Record<string, string>) => api.get('/admin/conversations', { params }),
   getAuditLogs: (params?: Record<string, string>) => api.get('/admin/audit-logs', { params }),
