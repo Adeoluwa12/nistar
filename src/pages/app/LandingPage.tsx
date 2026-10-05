@@ -187,7 +187,7 @@ const FAQS = [
 export default function LandingPage() {
   const aboutRef = useReveal<HTMLDivElement>()
   const faqRef = useReveal<HTMLDivElement>()
-  const [openFaq, setOpenFaq] = useState<string | null>(FAQS[0]?.id ?? null)
+  const [openFaq, setOpenFaq] = useState<string | null>(null)
 
   return (
     <>
