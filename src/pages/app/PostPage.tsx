@@ -108,7 +108,7 @@ export default function PostPage() {
       <article style={{ padding: '20px 16px 32px' }}>
         {post.status !== 'published' && (
           <div className="alert alert--info" style={{ marginBottom: 20 }}>
-            This post is <strong>{post.status}</strong> — only you and admins can see this preview.
+            This post is <strong>{post.status}</strong>. Only you and admins can see this preview.
           </div>
         )}
         {post.tags.length > 0 && (

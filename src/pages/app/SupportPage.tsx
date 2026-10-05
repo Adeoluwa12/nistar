@@ -51,7 +51,7 @@ export default function SupportPage() {
         message: message.trim(),
         ...(isAuthenticated ? {} : { name: name.trim() || undefined, email: email.trim() }),
       })
-      toast.success('Complaint submitted — our team will review it shortly')
+      toast.success('Complaint submitted. Our team will review it shortly.')
       setSubject('')
       setMessage('')
     } catch (err: unknown) {
@@ -66,7 +66,7 @@ export default function SupportPage() {
       <PageHeader
         eyebrow="We're listening"
         title={<>Help & <em>support</em></>}
-        subtitle="Something wrong with a session or a counselor, or is something broken? Tell us — we review every report."
+        subtitle="Something wrong with a session or a counselor, or is something broken? Tell us. We review every report."
       />
 
       <div style={{ padding: '16px 16px 0', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 10, maxWidth: 900 }}>

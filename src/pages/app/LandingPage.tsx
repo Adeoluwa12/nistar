@@ -202,7 +202,7 @@ export default function LandingPage() {
           </h1>
           <p className="landing-hero__subtitle">
             Nistar is a community where people share stories, find support, and connect with
-            professional counselors — all in a safe, moderated space.
+            professional counselors, all in a safe, moderated space.
           </p>
           <div className="landing-hero__actions">
             <Link to="/register" className="btn btn--primary btn--lg">
@@ -253,8 +253,8 @@ export default function LandingPage() {
             </h2>
             <p className="landing-about__copy reveal reveal--delay-2">
               Nistar is a community where people can share what they are going through, find people
-              who understand, and connect with professional counselors when they need more support
-              — all in one safe, moderated space.
+              who understand, and connect with professional counselors when they need more support,
+              all in one safe, moderated space.
             </p>
             <p className="landing-about__copy reveal reveal--delay-2">
               You don't have to know exactly what you need before you arrive. Start with a story, a
@@ -280,7 +280,7 @@ export default function LandingPage() {
                 <div>
                   <div className="landing-about__point-title">Connect</div>
                   <p className="landing-about__point-desc">
-                    Find people who understand what you are going through — without judgment.
+                    Find people who understand what you are going through, without judgment.
                   </p>
                 </div>
               </li>
@@ -323,7 +323,7 @@ export default function LandingPage() {
             <h2>Everything you need to heal &amp; grow</h2>
             <p>
               Whether you need someone to listen, a professional to guide you, or a community
-              that understands — it's all here.
+              that understands. It's all here.
             </p>
           </div>
           <div className="landing-features__grid">
@@ -367,7 +367,7 @@ export default function LandingPage() {
           <div className="landing-section__header">
             <h2>Stories from the community</h2>
             <p>
-              Real people sharing real experiences. No algorithms, no engagement metrics —
+              Real people sharing real experiences. No algorithms, no engagement metrics,
               just honest words from people who understand.
             </p>
           </div>
@@ -404,7 +404,7 @@ export default function LandingPage() {
             <StepCard
               number="01"
               title="Create your space"
-              description="Sign up in minutes. Share as much or as little as you want — your privacy is always protected."
+              description="Sign up in minutes. Share as much or as little as you want. Your privacy is always protected."
             />
             <StepCard
               number="02"

@@ -40,7 +40,7 @@ export default function WritePostPage() {
   const contentRef = useRef<HTMLTextAreaElement>(null)
   const tagInputRef = useRef<HTMLInputElement>(null)
 
-  // Local draft for this writing session — stable per scope (new vs :slug/edit)
+  // Local draft for this writing session - stable per scope (new vs :slug/edit)
   const scope = editSlug ?? 'new'
   const restoredDraft = useMemo<DraftSnapshot | null>(() => {
     try {
@@ -125,7 +125,7 @@ export default function WritePostPage() {
       try {
         localStorage.setItem(draftKey(scope), JSON.stringify(snapshot))
         setDraftSavedAt(snapshot.savedAt)
-      } catch { /* storage full — ignore */ }
+      } catch { /* storage full - ignore */ }
     }, 800)
     return () => clearTimeout(timer)
   }, [title, content, excerpt, category, tags, isAnonymous, allowComments, visibility, draftSavedAt, scope])
@@ -516,8 +516,8 @@ export default function WritePostPage() {
             onChange={e => setVisibility(e.target.value as 'public' | 'private')}
             style={{ cursor: 'pointer' }}
           >
-            <option value="public">Public — visible to everyone</option>
-            <option value="private">Private — only you and your counselor</option>
+            <option value="public">Public (visible to everyone)</option>
+            <option value="private">Private (only you and your counselor)</option>
           </select>
         </div>
 

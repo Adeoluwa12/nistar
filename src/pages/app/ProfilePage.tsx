@@ -62,7 +62,7 @@ export default function ProfilePage() {
       setUser(data.data)
       toast.success('Profile photo updated!')
     } catch (err: unknown) {
-      toast.error(getErrorMessage(err, 'Failed to update photo — please try again'))
+      toast.error(getErrorMessage(err, 'Failed to update photo. Please try again'))
     } finally {
       setUploading(false)
       if (fileRef.current) fileRef.current.value = ''

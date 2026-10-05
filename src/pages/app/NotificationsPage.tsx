@@ -70,8 +70,8 @@ export default function NotificationsPage() {
         eyebrow="Stay in the loop"
         title={<>Your <em>notifications</em></>}
         subtitle={unread > 0
-          ? `You have ${unread} unread update${unread === 1 ? '' : 's'} — replies, session changes and more.`
-          : 'Replies, session updates, and everything worth knowing — all in one place.'}
+          ? `You have ${unread} unread update${unread === 1 ? '' : 's'}: replies, session changes and more.`
+          : 'Replies, session updates, and everything worth knowing. All in one place.'}
       >
         {unread > 0 && (
           <button

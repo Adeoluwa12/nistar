@@ -177,7 +177,7 @@ export default function ChangePasswordPage() {
                     {strengthLabel}
                   </span>
                   <span style={{ fontSize: '0.75rem', color: 'var(--text-light)', marginLeft: 8 }}>
-                    {score < 4 && '— Add uppercase, numbers & symbols to strengthen'}
+                    {score < 4 && 'Tip: add uppercase, numbers & symbols to strengthen'}
                   </span>
                 </div>
               )}

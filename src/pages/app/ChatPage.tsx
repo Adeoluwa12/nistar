@@ -41,7 +41,7 @@ export default function ChatPage() {
   })
   const conversations: Conversation[] = convData?.data?.data ?? []
 
-  // Messages for the active conversation — polled so chat works even when no
+  // Messages for the active conversation - polled so chat works even when no
   // realtime socket server is available (e.g. serverless deployments).
   const { data: msgsData, dataUpdatedAt: msgsUpdatedAt } = useQuery({
     queryKey: ['messages', activeConv?._id],
@@ -50,7 +50,7 @@ export default function ChatPage() {
     refetchInterval: 5000,
   })
 
-  // Sync fetched messages into local state during render — the socket handler
+  // Sync fetched messages into local state during render - the socket handler
   // also appends live messages, deduped by _id.
   const fetchedMsgsKey = msgsData?.data?.data ? `${activeConv?._id}:${msgsUpdatedAt}` : null
   if (fetchedMsgsKey && fetchedMsgsKey !== msgsSyncKey) {
@@ -92,7 +92,7 @@ export default function ChatPage() {
       s.off('message:new')
       s.off('typing:start')
       s.off('typing:stop')
-      // Note: the socket is a shared app-wide singleton — it's torn down on
+      // Note: the socket is a shared app-wide singleton - it's torn down on
       // logout (AppLayout), not when navigating away from this page.
     }
   }, [token, user?._id, qc])
@@ -168,7 +168,7 @@ export default function ChatPage() {
     <PageHeader
       eyebrow="Messaging"
       title={<>Your <em>conversations</em></>}
-      subtitle="Private chats with your counselors — pick up right where a session left off."
+      subtitle="Private chats with your counselors. Pick up right where a session left off."
     />
   )
 

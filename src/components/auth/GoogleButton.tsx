@@ -81,7 +81,7 @@ export default function GoogleButton() {
           theme: 'outline', size: 'large', width: 320, text: 'continue_with', shape: 'pill',
         })
       })
-      .catch(() => { /* script blocked/offline — button simply won't render */ })
+      .catch(() => { /* script blocked/offline - button simply won't render */ })
 
     return () => { cancelled = true }
   }, [navigate, setAuth])

@@ -136,9 +136,6 @@ export default function AppLayout() {
         <aside className="desktop-sidebar" aria-label="Desktop navigation">
           <div className="desktop-sidebar__header">
             <NavLink to="/" className="desktop-sidebar__logo" title="Home">
-              <span className="desktop-sidebar__logo-mark">
-                <img src="/assets/nistar_logo.png" alt="" />
-              </span>
               <img
                 src="/assets/nistar_logo.png"
                 alt="Nistar"

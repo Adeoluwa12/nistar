@@ -32,7 +32,7 @@ export default function TeamPanel() {
       qualifications: counselor.qualifications ? counselor.qualifications.split(',').map(s => s.trim()).filter(Boolean) : [],
     }),
     onSuccess: () => {
-      toast.success('Counselor created — verification email sent')
+      toast.success('Counselor created. Verification email sent.')
       setCounselor(blankCounselor)
       qc.invalidateQueries({ queryKey: ['admin-users'] })
     },
@@ -47,7 +47,7 @@ export default function TeamPanel() {
       departmentId: deptAdmin.departmentId || undefined,
     }),
     onSuccess: () => {
-      toast.success('Department admin created — verification email sent')
+      toast.success('Department admin created. Verification email sent.')
       setDeptAdmin(blankAdmin)
       qc.invalidateQueries({ queryKey: ['admin-users'] })
     },
